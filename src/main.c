@@ -1,9 +1,7 @@
-#include <stdio.h>
-#include <conio.h>
-#include <windows.h>
+#include "systemIndependant.h"
 #include "perlin.h"
 #include "renderer.h"
-
+#include <conio.h>
 
 #define BOARD_WIDTH 60
 #define BOARD_HEIGHT 50
@@ -19,7 +17,6 @@ int main()
 	int pos_y = 10;
 
 	char board[BOARD_WIDTH][BOARD_HEIGHT];
-
 	int frame = 0;
 
 	while (1)
@@ -78,6 +75,6 @@ int main()
 			newLine();
 		}
 		flush();
-		Sleep(16);
+		sleep(16);
 	}
 }
