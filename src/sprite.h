@@ -1,0 +1,25 @@
+#ifndef SPRITE
+#define SPRITE
+
+#include "color.h"
+
+typedef struct Sprite
+{
+    char icon;
+    Color colorFore;
+    Color colorBack;
+} Sprite;
+
+typedef enum SpriteId
+{
+    SPRITE_EMPTY,
+    SPRITE_WATER_DEEP,
+    SPRITE_WATER,
+    SPRITE_SAND,
+    SPRITE_GRASS,
+    SPRITE_COUNT
+} SpriteID;
+
+Sprite *getSprite(SpriteID id);
+
+#endif
