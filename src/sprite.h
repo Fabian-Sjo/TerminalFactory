@@ -17,6 +17,8 @@ typedef enum SpriteId
     SPRITE_WATER,
     SPRITE_SAND,
     SPRITE_GRASS,
+    SPRITE_STONE,
+    SPRITE_SNOW,
     SPRITE_COUNT
 } SpriteID;
 

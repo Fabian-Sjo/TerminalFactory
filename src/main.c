@@ -7,7 +7,7 @@
 #define BOARD_WIDTH 40
 #define BOARD_HEIGHT 40
 
-int TERRAIN_PARTS[] = {SPRITE_WATER_DEEP, SPRITE_WATER, SPRITE_SAND, SPRITE_GRASS};
+int TERRAIN_PARTS[] = {SPRITE_WATER_DEEP, SPRITE_WATER, SPRITE_SAND, SPRITE_GRASS, SPRITE_STONE, SPRITE_SNOW};
 int pos_x = 10;
 int pos_y = 10;
 
@@ -35,6 +35,9 @@ void loop(long deltaTime)
 	case KEY_RIGHT_ARROW:
 		pos_x++;
 		break;
+	case KEY_ESC:
+		stopGame();
+		break;
 
 	default:
 		break;
@@ -53,7 +56,7 @@ void loop(long deltaTime)
 	// printf("\033[H");  // Move cursor to home position
 	printf("\033[H"); // scroll back terminal
 	// printf("\e[2J"); // clear terminal
-	//pos_x++;
+	// pos_x++;
 	for (int y = 0; y < BOARD_HEIGHT; y++)
 	{
 		for (int x = 0; x < BOARD_WIDTH; x++)
@@ -69,8 +72,8 @@ void loop(long deltaTime)
 			addSpriteToBuffer(thisChar);
 			addCharToBuffer(' ');
 		}
-		addCharToBuffer((y / 10) % 10 + '0');
-		addCharToBuffer(y % 10 + '0');
+		addCharToBuffer(((y + pos_y) / 10) % 10 + '0');
+		addCharToBuffer((y + pos_y) % 10 + '0');
 		newLine();
 	}
 	flush();
@@ -92,5 +95,12 @@ void main()
 	addFunctionLoop(&loop);
 	setFps(50);
 	startGame();
-	
 }
+/*
+> > > > > > > v
+A			  v
+A			  v
+A			  v
+< < < < < < < <
+
+*/
