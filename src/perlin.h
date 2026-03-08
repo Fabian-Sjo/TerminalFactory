@@ -1,3 +1,6 @@
+#ifndef PERLIN_H
+#define PERLIN_H
 
-float noise2d(float x, float y);
-float perlin2d(float x, float y, float freq, int depth);
+extern double perlin_Get2d(double x, double y, double freq, int depth);
+
+#endif  // PERLIN_H
