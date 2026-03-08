@@ -3,8 +3,8 @@
 #include "sprite.h"
 #include "color.h"
 
-char *buffer = NULL;  // TODO make this changing?
-int nrOfElements = 0; // TODO make this changing?
+char *buffer = NULL;
+int nrOfElements = 0;
 int bufferSize = 2;
 
 Color currentForeColor = {0, 0, 0};

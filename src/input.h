@@ -6,6 +6,7 @@ typedef enum Key
 {
 	KEY_NONE,
 	KEY_INVALID,
+	KEY_ESC,
 	KEY_A,
 	KEY_B,
 	KEY_C,

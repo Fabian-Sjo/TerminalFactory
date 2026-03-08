@@ -10,6 +10,8 @@ char *keyToString(Key key)
 
 	case KEY_NONE:
 		return "none";
+	case KEY_ESC:
+		return "esc";
 	case KEY_A:
 		return "a";
 	case KEY_B:
@@ -80,6 +82,8 @@ Key getNormalKey(int c)
 {
 	switch (c)
 	{
+	case 27:
+		return KEY_ESC;
 	case 'a':
 		return KEY_A;
 	case 'b':
