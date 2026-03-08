@@ -1,1 +1,1 @@
-void sleep(int milliseconds);
+void msSleep(int milliseconds);

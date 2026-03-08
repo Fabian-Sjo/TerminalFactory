@@ -4,11 +4,11 @@
 #include <unistd.h>
 #endif
 
-void sleep(int ms)
+void msSleep(int ms)
 {
 #ifdef _WIN32
-    Sleep(ms);
+	Sleep(ms);
 #else
-    usleep(ms * 1000);
+	usleep(ms * 1000);
 #endif
 }

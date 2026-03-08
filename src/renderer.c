@@ -55,15 +55,15 @@ void addSpriteToBuffer(SpriteID spriteId)
 		currentForeColor.G != (sprite->colorFore.G) ||
 		currentForeColor.B != (sprite->colorFore.B))
 	{
+		setColorFore((sprite->colorFore));
 	}
-	setColorFore((sprite->colorFore));
 	if (
 		currentBackColor.R != (sprite->colorBack.R) ||
 		currentBackColor.G != (sprite->colorBack.G) ||
 		currentBackColor.B != (sprite->colorBack.B))
 	{
+		setColorBack((sprite->colorBack));
 	}
-	setColorBack((sprite->colorBack));
 	addCharToBuffer(sprite->icon);
 }
 

@@ -67,7 +67,7 @@ void gameLoop()
 
         if (sleepNs > 0)
         {
-            sleep(sleepNs / NS_PER_MS);
+            msSleep(sleepNs / NS_PER_MS);
         }
     }
 }
