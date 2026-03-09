@@ -1,7 +1,7 @@
 #ifndef INPUT
 #define INPUT
 
-
+void initInput();
 typedef enum Key
 {
 	KEY_NONE,

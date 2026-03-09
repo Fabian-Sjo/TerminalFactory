@@ -1,14 +1,40 @@
 #include "input.h"
 #include "input.h"
 #include <stdio.h>
-
 #ifdef _WIN32
 #include <conio.h>
 #else
 #include <termios.h>
+#include <unistd.h>
+static struct termios old, new1;
 #endif
 
 int neededChecksWithoutInput = 2;
+
+/* Initialize new terminal i/o settings */
+
+void initInput()
+{
+#ifdef _WIN32
+	/* */
+#else
+	tcgetattr(0, &old);			  /* grab old terminal i/o settings */
+	new1 = old;					  /* make new settings same as old settings */
+	new1.c_lflag &= ~ICANON;	  /* disable buffered i/o */
+	new1.c_lflag &= ~ECHO;		  /* disable echo */
+	new1.c_cc[VMIN] = 0;		  /* return immediately, even if no data */
+	new1.c_cc[VTIME] = 0;		  /* no timeout */
+	tcsetattr(0, TCSANOW, &new1); /* use these new terminal i/o settings now */
+#endif
+}
+void resetInput()
+{
+#ifdef _WIN32
+/* */
+#else
+	tcsetattr(0, TCSANOW, &old);
+#endif
+}
 
 char *keyToString(Key key)
 {
@@ -170,13 +196,13 @@ Key getKey()
 #ifdef _WIN32
 	if (_kbhit())
 	{
-		int key = _getch();
+		int key = getchar();
 		int function = 0;
 		if (_kbhit())
-			function = _getch();
-			
+			function = getchar();
+
 		Key thisKey = KEY_NONE;
- 		if (key != 224)
+		if (key != 224)
 			thisKey = getNormalKey(key);
 		else
 			thisKey = getFunctionKey(function);
@@ -185,6 +211,26 @@ Key getKey()
 	}
 	return KEY_NONE;
 #else
+	char c;
+	int hasChar = read(0, &c, 1);
+	if (hasChar)
+	{
+		int key = c;
+		int function = 0;
+
+		hasChar = read(0, &c, 1);
+		if (hasChar)
+			function = c;
+
+		Key thisKey = KEY_NONE;
+		if (key != 224)
+			thisKey = getNormalKey(key);
+		else
+			thisKey = getFunctionKey(function);//TODO does not work yet
+
+		return thisKey;
+	}
+	return KEY_NONE;
 #endif
 }
 KeyEvent getKeyEvent()
@@ -202,25 +248,25 @@ KeyEvent getKeyEvent()
 			checksWithoutInput = 0;
 			keyEvent.released = heldKey;
 			heldKey = KEY_NONE;
-		}else
+		}
+		else
 		{
 			keyEvent.held = heldKey;
 		}
-		
 	}
-	else if(heldKey != thisKey)
+	else if (heldKey != thisKey)
 	{
 		checksWithoutInput = 0;
 		keyEvent.released = heldKey;
 		heldKey = thisKey;
 		keyEvent.pressed = thisKey;
-	}else
+	}
+	else
 	{
 		checksWithoutInput = 0;
 		heldKey = thisKey;
 		keyEvent.held = thisKey;
 	}
-	
 
 	return keyEvent;
 }
