@@ -1,12 +1,14 @@
-#include "./utils/systemIndependant.h"
-#include "./utils/perlin.h"
-#include "./graphical/renderer.h"
-#include "./game/input.h"
+#include "utils/systemIndependant.h"
+#include "utils/perlin.h"
+#include "graphical/renderer.h"
+#include "game/input.h"
+
+#include "utils/map.h"
 
 #include <stdio.h>
 #include <signal.h>
 
-#include "./game/gameLoop.h"
+#include "game/gameLoop.h"
 #define BOARD_WIDTH 66
 #define BOARD_HEIGHT 25
 
@@ -125,13 +127,9 @@ void stop()
 	printf("\033[H");	// scroll back terminal
 	fflush(stdout);
 }
-#include <unistd.h>
+
 int main()
 {
-	printf("start");
-	fflush(stdout); // Manually flush the buffer
-	// return 0;
-
 	signal(SIGINT, stopGame);
 
 	printf("\033[0");
@@ -141,6 +139,8 @@ int main()
 	addFunctionLoop(&loop);
 	setFps(50);
 	startGame();
+
+	return 0;
 }
 /*
 	  > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > -
