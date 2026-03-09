@@ -8,7 +8,7 @@
 
 #include "./game/gameLoop.h"
 #define BOARD_WIDTH 66
-#define BOARD_HEIGHT 33
+#define BOARD_HEIGHT 25
 
 int TERRAIN_PARTS[] = {SPRITE_WATER_DEEP, SPRITE_WATER, SPRITE_SAND, SPRITE_GRASS, SPRITE_STONE, SPRITE_SNOW};
 int pos_x = 0;
@@ -33,6 +33,21 @@ void loop(long deltaTime)
 	case KEY_E:
 		zoom -= 0.1;
 		break;
+	case KEY_ESC:
+		stopGame();
+		break;
+	case KEY_S:
+		pos_y++;
+		break;
+	case KEY_W:
+		pos_y--;
+		break;
+	case KEY_A:
+		pos_x--;
+		break;
+	case KEY_D:
+		pos_x++;
+		break;
 	default:
 		break;
 	}
@@ -49,9 +64,6 @@ void loop(long deltaTime)
 		break;
 	case KEY_D:
 		pos_x++;
-		break;
-	case KEY_ESC:
-		stopGame();
 		break;
 
 	default:
@@ -120,7 +132,7 @@ int main()
 	fflush(stdout); // Manually flush the buffer
 	// return 0;
 
-	// signal(SIGINT, stopGame);
+	signal(SIGINT, stopGame);
 
 	printf("\033[0");
 	addFunctionStart(&initInput);
