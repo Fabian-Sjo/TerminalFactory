@@ -1,5 +1,12 @@
-#include "game/input.h"
+#include "input.h"
+#include "input.h"
+#include <stdio.h>
+
+#ifdef _WIN32
 #include <conio.h>
+#else
+#include <termios.h>
+#endif
 
 int neededChecksWithoutInput = 2;
 
@@ -160,6 +167,7 @@ Key getFunctionKey(int c)
 }
 Key getKey()
 {
+#ifdef _WIN32
 	if (_kbhit())
 	{
 		int key = _getch();
@@ -176,6 +184,8 @@ Key getKey()
 		return thisKey;
 	}
 	return KEY_NONE;
+#else
+#endif
 }
 KeyEvent getKeyEvent()
 {

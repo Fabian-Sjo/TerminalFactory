@@ -1,7 +1,7 @@
 #define true 1
 #define false 0
 #include <time.h>
-#include "utils/systemIndependant.h"
+#include "../utils/systemIndependant.h"
 #define NS_PER_SEC 1000000000L
 #define NS_PER_MS 1000000L
 
@@ -19,7 +19,7 @@ void (*functionsLoop[5])(long deltaTime); // TODO hardcoded 5
 int nrOfFunctionsStop = 0;
 void (*functionsStop[5])(); // TODO hardcoded 5
 
-setFps(int fps)
+void setFps(int fps)
 {
 	targerFps = fps;
 }

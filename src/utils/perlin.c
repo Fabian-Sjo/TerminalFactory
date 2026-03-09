@@ -1,4 +1,4 @@
-#include "utils/perlin.h"
+#include "perlin.h"
 
 #include <math.h>
 
@@ -43,8 +43,8 @@ static double smooth_inter(double x, double y, double s)
 
 static double noise2d(double x, double y)
 {
-    const int  x_int = floor( x );
-    const int  y_int = floor( y );
+    const int  x_int = (int)( x );
+    const int  y_int = (int)( y );
     const double  x_frac = x - x_int;
     const double  y_frac = y - y_int;
     const int  s = noise2( x_int, y_int );

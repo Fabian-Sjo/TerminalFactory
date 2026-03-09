@@ -1,7 +1,7 @@
 #ifndef SPRITE
 #define SPRITE
 
-#include "graphical/color.h"
+#include "color.h"
 
 typedef struct Sprite
 {

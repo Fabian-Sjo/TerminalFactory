@@ -1,4 +1,4 @@
-#include "graphical/sprite.h"
+#include "sprite.h"
 
 static Sprite sprites[SPRITE_COUNT] =
 	{

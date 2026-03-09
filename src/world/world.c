@@ -1,10 +1,10 @@
-#include "world/chunk.h"
-#include "utils/map.h"
+#include "chunk.h"
+#include "../utils/map.h"
 
-typedef struct World
+typedef struct 
 {
 	Map *chunks;
-};
+} World;
 
 void generate(int chunkX, int chunkY){
 

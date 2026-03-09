@@ -1,8 +1,7 @@
 #ifndef RENDERER
 #define RENDERER
 
-#include "graphical/sprite.h"
-
+#include "sprite.h"
 
 
 

@@ -1,4 +1,4 @@
-#include "world/tiles.h"
+#include "tiles.h"
 
 #define CHUNK_SIZE 16
 

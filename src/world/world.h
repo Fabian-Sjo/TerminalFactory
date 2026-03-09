@@ -1,6 +1,6 @@
-#include "world/tiles.h"
+#include "tiles.h"
 
-typedef struct World;
+typedef struct World World;
 
 void generate(int chunkX, int chunkY);
 

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "graphical/sprite.h"
-#include "graphical/color.h"
+#include "sprite.h"
+#include "color.h"
 
 char *buffer = NULL;
 int nrOfElements = 0;
