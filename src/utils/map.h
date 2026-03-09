@@ -1,11 +1,11 @@
 typedef struct Map Map;
 
-Map *create();
+Map *mapCreate(unsigned long size);
 
-int add(long key, void *value);
+int mapAdd(Map *map, long key, void *value);
 
-void *get(long key);
+void *mapGet(Map *map, long key);
 
-void *remove(long key);
+void *mapRemove(Map *map, long key);
 
-int destroy(Map *map);
+int mapDestroy(Map *map);

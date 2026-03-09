@@ -5,7 +5,6 @@
 #ifdef _WIN32
 #include <conio.h>
 #else
-#include <termios.h>
 #endif
 
 int neededChecksWithoutInput = 2;

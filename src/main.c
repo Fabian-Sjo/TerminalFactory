@@ -2,11 +2,13 @@
 #include "utils/perlin.h"
 #include "graphical/renderer.h"
 #include "game/input.h"
+#include "game/gameLoop.h"
+
+#include "utils/map.h"
 
 #include <stdio.h>
 #include <signal.h>
 
-#include "game/gameLoop.h"
 #define BOARD_WIDTH 66
 #define BOARD_HEIGHT 33
 
@@ -114,9 +116,8 @@ void stop()
 	fflush(stdout);
 }
 
-void main()
+int main()
 {
-
 	signal(SIGINT, stopGame);
 
 	printf("\033[0");
@@ -125,6 +126,8 @@ void main()
 	addFunctionLoop(&loop);
 	setFps(50);
 	startGame();
+
+	return 0;
 }
 /*
 	  > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > -
