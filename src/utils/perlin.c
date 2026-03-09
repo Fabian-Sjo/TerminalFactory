@@ -1,4 +1,4 @@
-#include "Perlin.h"
+#include "utils/perlin.h"
 
 #include <math.h>
 

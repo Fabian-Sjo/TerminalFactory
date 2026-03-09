@@ -1,5 +1,5 @@
-#include "input.h"
-#include "conio.h"
+#include "game/input.h"
+#include <conio.h>
 
 int neededChecksWithoutInput = 2;
 
