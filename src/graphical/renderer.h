@@ -9,7 +9,8 @@
 		
 void addStrToBuffer(char *str);
 void addCharToBuffer(char c);
-void addSpriteToBuffer(SpriteID sprite);
+void addSpriteIdToBuffer(SpriteID sprite);
+void addSpriteToBuffer(Sprite sprite);
 
 void setColorFore(Color colorForeground);
 void setColorBack(Color colorBackground);

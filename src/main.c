@@ -9,14 +9,14 @@
 #include <signal.h>
 
 #include "game/gameLoop.h"
-#define BOARD_WIDTH 66
-#define BOARD_HEIGHT 25
+#define SCREEN_WIDTH 66
+#define SCREEN_HEIGHT 25
 
 int TERRAIN_PARTS[] = {SPRITE_WATER_DEEP, SPRITE_WATER, SPRITE_SAND, SPRITE_GRASS, SPRITE_STONE, SPRITE_SNOW};
 int pos_x = 0;
 int pos_y = 0;
 float zoom = 0.1;
-char board[BOARD_WIDTH][BOARD_HEIGHT];
+char board[SCREEN_WIDTH][SCREEN_HEIGHT];
 int frame = 0;
 
 World *world = NULL;
@@ -74,13 +74,13 @@ void loop(long deltaTime)
 		break;
 	}
 
-	for (int x = 0; x < BOARD_WIDTH; x++)
+	for (int x = 0; x < SCREEN_WIDTH; x++)
 	{
-		for (int y = 0; y < BOARD_HEIGHT; y++)
+		for (int y = 0; y < SCREEN_HEIGHT; y++)
 		{
 			float perlinValue = perlin_Get2d(
-				(x - BOARD_WIDTH / 2) * zoom + pos_x,
-				(y - BOARD_HEIGHT / 2) * zoom + pos_y,
+				(x - SCREEN_WIDTH / 2) * zoom + pos_x,
+				(y - SCREEN_HEIGHT / 2) * zoom + pos_y,
 				0.1, 1);
 			if (perlinValue >= 1)
 				perlinValue = 0.999999;
@@ -91,22 +91,29 @@ void loop(long deltaTime)
 	}
 	// printf("\033[2J"); // Clear entire screen
 	// printf("\033[H");  // Move cursor to home position
-	printf("\033[H"); // scroll back terminal
 
 	// pos_x++;
-	for (int y = 0; y < BOARD_HEIGHT; y++)
+}
+void render()
+{
+	printf("\033[H"); // scroll back terminal
+
+	for (int y = 0; y < SCREEN_HEIGHT; y++)
 	{
-		for (int x = 0; x < BOARD_WIDTH; x++)
+		for (int x = 0; x < SCREEN_WIDTH; x++)
 		{
 
-			char thisChar = board[x][y];
+			Tile tile = getTile(world,x,y);
 
 			// setColorFore(x+y);
 			// setColorBack(x+y);
 			// addCharToBuffer((y + pos_y) % 10 + '0');
 			// addCharToBuffer(((x + pos_x) / 10) % 10 + '0');
 			// addCharToBuffer(thisChar);
-			addSpriteToBuffer(thisChar);
+
+			Sprite sprite = tile.single.sprite;
+			addSpriteToBuffer(sprite);
+			
 			// addCharToBuffer(' ');
 		}
 		addCharToBuffer(((y + pos_y) / 10) % 10 + '0');
@@ -135,7 +142,7 @@ void stop()
 
 int main()
 {
-	signal(SIGINT, stopGame);
+	//signal(SIGINT, stopGame);
 
 	printf("\033[0");
 	addFunctionStart(&initInput);

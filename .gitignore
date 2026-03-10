@@ -1,3 +1,7 @@
 out/*
 .vscode/*
 makefile
+build.bat
+cFiles.bash
+test/**
+**/*.pdb

@@ -8,7 +8,7 @@ typedef enum
 	TILE_NONE,
 	TILE_MULTI_PART,
 	TILE_MULTI_CORE,
-	TILE_ENTITY
+	TILE_SINGLE_ENTITY
 } TileType;
 
 /*
@@ -20,30 +20,38 @@ has type
 			SINGLE (1 sprite, state, type)
 			MULTI CORE (n sprites, state, type)
 			*/
-typedef struct Data
+typedef struct
 {
-	struct // PART OF ENTITY
-	{
-		int originX, originY;
-	};
-	struct // ENTITY
-	{
-		Sprite sprite;
-		int state;
-	};
-} Data;
+	Sprite sprite;
+	int state;
+} SingleEntityData;
+
+typedef struct
+{
+	int originX;
+	int originY;
+} MultiPartData;
+
+typedef struct
+{
+	Sprite *sprites;
+	int spriteCount;
+	int state;
+} MultiOriginData;
 
 typedef struct Tile
 {
-
 	TileType type;
-	Data *data;
+	union
+	{
+		SingleEntityData single;
+		MultiPartData part;
+		MultiOriginData origin;
+	};
 
 } Tile;
 
-Tile testTile = {
-	TILE_ENTITY,
-	{{'T', COLOR_BLACK, COLOR_BLACK}, 0}};
+extern Tile testTile;
 
 void getTileType();
 void getTileSprite();

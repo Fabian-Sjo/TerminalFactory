@@ -7,12 +7,26 @@
 
 typedef struct
 {
-	Chunk *chunks[3][3];
+	Map *chunks;
 } World;
+
+Chunk *getChunk(World *world, int x, int y)
+{
+	long key = (((long)x) << 32) + ((long)y);
+	return mapGet(world->chunks, key);
+}
+
+void setChunk(World *world, int x, int y, Chunk *chunk)
+{
+	long key = (((long)x) << 32) + ((long)y);
+	mapAdd(world->chunks, key, chunk);
+}
 
 World *createWorld()
 {
-	return malloc(sizeof(World));
+	World *world = malloc(sizeof(world));
+	world->chunks = mapCreate(sizeof(Map *));
+	return world;
 }
 
 void generateChunk(World *world, int chunkX, int chunkY)
@@ -25,13 +39,24 @@ void generateChunk(World *world, int chunkX, int chunkY)
 			setChunkTile(chunk, x, y, testTile);
 		}
 	}
-	world->chunks[chunkX][chunkY] = chunk;
+	setChunk(world, chunkX, chunkY, chunk);
 }
 
-Tile getTile(World *world, int x, int y)
+Tile getTile(int *error, World *world, int x, int y)
 {
+	int chunkX = x / CHUNK_SIZE;
+	int chunkY = y / CHUNK_SIZE;
+	int chunkLocalX = x - chunkX;
+	int chunkLocalY = y - chunkY;
+
+	return getChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY);
 }
 
 void setTile(World *world, int x, int y, Tile tile)
 {
+	int chunkX = x / CHUNK_SIZE;
+	int chunkY = y / CHUNK_SIZE;
+	int chunkLocalX = x - chunkX;
+	int chunkLocalY = y - chunkY;
+	setChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, tile);
 }
