@@ -1,5 +1,4 @@
 #include "map.h"
-#include <stdio.h>
 #include <stdlib.h>
 
 #define INITIAL_SIZE 32
@@ -14,7 +13,7 @@ struct Map {
 Map *mapCreate(unsigned long size_of_values) {
     Map *map = calloc(1,sizeof(Map));
 
-    long key[INITIAL_SIZE] = {0};
+    long *key = calloc(INITIAL_SIZE, sizeof(long));
     void **value = calloc(INITIAL_SIZE, size_of_values);
 
     map->capacity = INITIAL_SIZE;
@@ -34,6 +33,7 @@ int mapAdd(Map *map, long key, void *value) {
     }
     map->key[map->number_of_elements] = key;
     map->value[map->number_of_elements] = value;
+
     map->number_of_elements++;
     return 0;
 }
@@ -62,13 +62,11 @@ void *mapRemove(Map *map, long key) {
     map->value[found_index] = map->value[map->number_of_elements - 1];
     map->value[map->number_of_elements - 1] = NULL;
     map->number_of_elements--;
+	return value;
 }
 
 int mapDestroy(Map *map) {
     free(map->key);
-    for (int i = 0; i < map->number_of_elements; i++) {
-        free(map->value[i]);
-    }
     free(map->value);
     free(map);
     map = NULL;
