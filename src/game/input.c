@@ -196,10 +196,10 @@ Key getKey()
 #ifdef _WIN32
 	if (_kbhit())
 	{
-		int key = getchar();
+		int key = _getch();
 		int function = 0;
 		if (_kbhit())
-			function = getchar();
+			function = _getch();
 
 		Key thisKey = KEY_NONE;
 		if (key != 224)

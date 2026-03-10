@@ -9,7 +9,7 @@ World *createWorld();
 
 void generateChunk(World *world, int chunkX, int chunkY);
 
-Tile getTile(World *world, int x, int y);
+Tile *getTile(World *world, int x, int y);
 
 void setTile(World *world, int x, int y, Tile tile);
 

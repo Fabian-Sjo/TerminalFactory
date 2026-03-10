@@ -9,17 +9,19 @@
 #include <signal.h>
 
 #include "game/gameLoop.h"
-#define SCREEN_WIDTH 66
-#define SCREEN_HEIGHT 25
+#define SCREEN_WIDTH 20
+#define SCREEN_HEIGHT 20
 
 int TERRAIN_PARTS[] = {SPRITE_WATER_DEEP, SPRITE_WATER, SPRITE_SAND, SPRITE_GRASS, SPRITE_STONE, SPRITE_SNOW};
-int pos_x = 0;
-int pos_y = 0;
+int pos_x = -1;
+int pos_y = -1;
 float zoom = 0.1;
 char board[SCREEN_WIDTH][SCREEN_HEIGHT];
 int frame = 0;
 
 World *world = NULL;
+
+void render();
 
 void loop(long deltaTime)
 {
@@ -93,6 +95,7 @@ void loop(long deltaTime)
 	// printf("\033[H");  // Move cursor to home position
 
 	// pos_x++;
+	render();
 }
 void render()
 {
@@ -103,18 +106,18 @@ void render()
 		for (int x = 0; x < SCREEN_WIDTH; x++)
 		{
 
-			Tile tile = getTile(world,x,y);
+			Tile *tile = getTile(world, x + pos_x, y + pos_y);
 
-			// setColorFore(x+y);
-			// setColorBack(x+y);
-			// addCharToBuffer((y + pos_y) % 10 + '0');
-			// addCharToBuffer(((x + pos_x) / 10) % 10 + '0');
-			// addCharToBuffer(thisChar);
-
-			Sprite sprite = tile.single.sprite;
-			addSpriteToBuffer(sprite);
+			Sprite sprite = {' ', {200, 0, 0}, COLOR_BLACK};
 			
-			// addCharToBuffer(' ');
+			if (tile != NULL)
+			{
+				sprite = getTileSprite(tile);
+			}
+
+			addSpriteToBuffer(sprite);
+
+			addCharToBuffer(' ');
 		}
 		addCharToBuffer(((y + pos_y) / 10) % 10 + '0');
 		addCharToBuffer((y + pos_y) % 10 + '0');
@@ -129,6 +132,8 @@ void start()
 
 	world = createWorld();
 	generateChunk(world, 0, 0);
+	generateChunk(world, 1, 1);
+	generateChunk(world, -1, -1);
 }
 void stop()
 {
@@ -142,7 +147,7 @@ void stop()
 
 int main()
 {
-	//signal(SIGINT, stopGame);
+	// signal(SIGINT, stopGame);
 
 	printf("\033[0");
 	addFunctionStart(&initInput);

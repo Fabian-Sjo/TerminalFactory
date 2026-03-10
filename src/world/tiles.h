@@ -5,7 +5,6 @@
 
 typedef enum
 {
-	TILE_NONE,
 	TILE_MULTI_PART,
 	TILE_MULTI_CORE,
 	TILE_SINGLE_ENTITY
@@ -20,41 +19,12 @@ has type
 			SINGLE (1 sprite, state, type)
 			MULTI CORE (n sprites, state, type)
 			*/
-typedef struct
-{
-	Sprite sprite;
-	int state;
-} SingleEntityData;
-
-typedef struct
-{
-	int originX;
-	int originY;
-} MultiPartData;
-
-typedef struct
-{
-	Sprite *sprites;
-	int spriteCount;
-	int state;
-} MultiOriginData;
-
-typedef struct Tile
-{
-	TileType type;
-	union
-	{
-		SingleEntityData single;
-		MultiPartData part;
-		MultiOriginData origin;
-	};
-
-} Tile;
+typedef struct Tile Tile;
 
 extern Tile testTile;
 
-void getTileType();
-void getTileSprite();
+TileType getTileType(Tile *tile);
+Sprite getTileSprite(Tile *tile);
 void getTileState();
 
 #endif
