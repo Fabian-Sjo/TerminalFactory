@@ -2,7 +2,7 @@
 #include "utils/perlin.h"
 #include "graphical/renderer.h"
 #include "game/input.h"
-
+#include "world/world.h"
 #include "utils/map.h"
 
 #include <stdio.h>
@@ -18,6 +18,8 @@ int pos_y = 0;
 float zoom = 0.1;
 char board[BOARD_WIDTH][BOARD_HEIGHT];
 int frame = 0;
+
+World *world = NULL;
 
 void loop(long deltaTime)
 {
@@ -117,6 +119,9 @@ void start()
 {
 	printf("\033[2J");	// clear terminal
 	printf("\33[?25l"); // reset ansi
+
+	world = createWorld();
+	generateChunk(world, 0, 0);
 }
 void stop()
 {

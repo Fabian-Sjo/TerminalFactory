@@ -1,9 +1,17 @@
+#ifndef CHUNK_H
+#define CHUNK_H
+
 #include "tiles.h"
 
 #define CHUNK_SIZE 16
 
-
-struct Chunk
+typedef struct Chunk
 {
-	int tiles[CHUNK_SIZE][CHUNK_SIZE];
-};
+	Tile tiles[CHUNK_SIZE][CHUNK_SIZE];
+} Chunk;
+
+Tile getChunkTile(Chunk *chunk, int x, int y);
+
+void setChunkTile(Chunk *chunk, int x, int y, Tile tile);
+
+#endif

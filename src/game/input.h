@@ -1,5 +1,6 @@
-#ifndef INPUT
-#define INPUT
+#ifndef INPUT_H
+#define INPUT_H
+
 
 void initInput();
 typedef enum Key
@@ -49,4 +50,6 @@ typedef struct KeyEvent
 char *keyToString(Key key);
 Key getKey();
 KeyEvent getKeyEvent();
+
+
 #endif

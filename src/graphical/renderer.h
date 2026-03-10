@@ -1,5 +1,6 @@
-#ifndef RENDERER
-#define RENDERER
+#ifndef RENDERER_H
+#define RENDERER_H
+
 
 #include "sprite.h"
 
@@ -15,3 +16,4 @@ void setColorBack(Color colorBackground);
 void flush();
 void newLine();
 #endif
+

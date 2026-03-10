@@ -1,8 +1,13 @@
+#ifndef TILES_H
+#define TILES_H
+
+#include "../graphical/sprite.h"
 
 typedef enum
 {
 	TILE_NONE,
-	TILE_PART_OF_ENTITY,
+	TILE_MULTI_PART,
+	TILE_MULTI_CORE,
 	TILE_ENTITY
 } TileType;
 
@@ -23,12 +28,12 @@ typedef struct Data
 	};
 	struct // ENTITY
 	{
+		Sprite sprite;
 		int state;
-		int sprite;
 	};
 } Data;
 
-typedef struct
+typedef struct Tile
 {
 
 	TileType type;
@@ -36,6 +41,12 @@ typedef struct
 
 } Tile;
 
-void getType();
-void getSprite();
-void getState();
+Tile testTile = {
+	TILE_ENTITY,
+	{{'T', COLOR_BLACK, COLOR_BLACK}, 0}};
+
+void getTileType();
+void getTileSprite();
+void getTileState();
+
+#endif
