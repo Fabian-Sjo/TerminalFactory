@@ -6,3 +6,4 @@ cFiles.bash
 test/**
 **/*.pdb
 .vs/*
+helpStuffs/*.exe

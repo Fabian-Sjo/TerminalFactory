@@ -9,8 +9,8 @@
 #include <signal.h>
 
 #include "game/gameLoop.h"
-#define SCREEN_WIDTH 20
-#define SCREEN_HEIGHT 20
+#define SCREEN_WIDTH 100
+#define SCREEN_HEIGHT 40
 
 int TERRAIN_PARTS[] = {SPRITE_WATER_DEEP, SPRITE_WATER, SPRITE_SAND, SPRITE_GRASS, SPRITE_STONE, SPRITE_SNOW};
 int pos_x = -20;
@@ -126,7 +126,7 @@ void render()
 
 			addSpriteToBuffer(groundSprite);
 
-			addCharToBuffer(' ');
+			//addCharToBuffer(' ');
 		}
 		addCharToBuffer(((y + pos_y) / 10) % 10 + '0');
 		addCharToBuffer((y + pos_y) % 10 + '0');
