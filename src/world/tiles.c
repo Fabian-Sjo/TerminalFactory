@@ -1,4 +1,5 @@
 #include "tiles.h"
+#include <stdlib.h>
 
 typedef struct
 {
