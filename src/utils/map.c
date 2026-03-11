@@ -28,13 +28,12 @@ int mapAdd(Map *map, unsigned long long key, void *value) {
     }
     if (map->capacity <= map->number_of_elements) {
         map->capacity *= 1.5;
-        //unsigned long long *oldKeys = map->key;
-        //void **oldValues = map->value;
-        //map->key = calloc(map->capacity, sizeof(map->key[0]));
-        //map->value = calloc(map->capacity, sizeof(map->value[0]));
 
-        map->key = realloc(map->key, map->capacity);
-        map->value = realloc(map->value, map->capacity);
+        unsigned long long *newKey = realloc(map->key, map->capacity * sizeof(map->key[0]));
+
+        map->key = newKey;
+        void **newValue = realloc(map->value, map->capacity * sizeof(map->value[0]));
+        map->value = newValue;
     }
     map->key[map->number_of_elements] = key;
     map->value[map->number_of_elements] = value;

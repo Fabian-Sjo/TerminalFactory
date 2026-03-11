@@ -13,8 +13,8 @@
 #define SCREEN_HEIGHT 20
 
 int TERRAIN_PARTS[] = {SPRITE_WATER_DEEP, SPRITE_WATER, SPRITE_SAND, SPRITE_GRASS, SPRITE_STONE, SPRITE_SNOW};
-int pos_x = -1;
-int pos_y = -4;
+int pos_x = -20;
+int pos_y = -20;
 float zoom = 0.1;
 char board[SCREEN_WIDTH][SCREEN_HEIGHT];
 int frame = 0;
