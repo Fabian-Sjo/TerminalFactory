@@ -8,6 +8,8 @@
 
 #include <time.h>
 #include <errno.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
 #endif
 
@@ -36,7 +38,11 @@ Vector2Int getTermSize()
 	
 	Vector2Int vec = {columns, rows};
 	return vec;
-#else
+#else 
+	struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
+	Vector2Int vec = {w.ws_col, w.ws_row};
+	return vec;
 #endif
 }
