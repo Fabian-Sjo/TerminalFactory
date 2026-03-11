@@ -19,6 +19,7 @@ has type
 			SINGLE (1 sprite, state, type)
 			MULTI CORE (n sprites, state, type)
 			*/
+		
 typedef struct Tile Tile;
 
 extern Tile testTile;

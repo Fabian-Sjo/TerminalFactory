@@ -14,7 +14,7 @@
 
 int TERRAIN_PARTS[] = {SPRITE_WATER_DEEP, SPRITE_WATER, SPRITE_SAND, SPRITE_GRASS, SPRITE_STONE, SPRITE_SNOW};
 int pos_x = -1;
-int pos_y = -1;
+int pos_y = -4;
 float zoom = 0.1;
 char board[SCREEN_WIDTH][SCREEN_HEIGHT];
 int frame = 0;
@@ -95,6 +95,9 @@ void loop(long deltaTime)
 	// printf("\033[H");  // Move cursor to home position
 
 	// pos_x++;
+
+	generateChunk(world, pos_x + SCREEN_WIDTH / 2, pos_y + SCREEN_HEIGHT / 2);
+
 	render();
 }
 void render()
@@ -106,16 +109,20 @@ void render()
 		for (int x = 0; x < SCREEN_WIDTH; x++)
 		{
 
-			Tile *tile = getTile(world, x + pos_x, y + pos_y);
+			GroundTile *groundTile = getGroundTile(world, x + pos_x, y + pos_y);
+			Sprite groundSprite = {' ', {200, 0, 0}, COLOR_BLACK};
 
-			Sprite sprite = {' ', {200, 0, 0}, COLOR_BLACK};
-			
+			groundSprite = getGroundTileSprite(groundTile);
+
+			Tile *tile = getTile(world, x + pos_x, y + pos_y);
 			if (tile != NULL)
 			{
-				sprite = getTileSprite(tile);
+				Sprite sprite = getTileSprite(tile);
+				groundSprite.icon = sprite.icon;
+				groundSprite.colorFore = sprite.colorFore;
 			}
 
-			addSpriteToBuffer(sprite);
+			addSpriteToBuffer(groundSprite);
 
 			addCharToBuffer(' ');
 		}
@@ -131,9 +138,7 @@ void start()
 	printf("\33[?25l"); // reset ansi
 
 	world = createWorld();
-	generateChunk(world, 0, 0);
-	generateChunk(world, 1, 1);
-	generateChunk(world, -1, -1);
+	// generateChunk(world, 1, 1);
 }
 void stop()
 {
