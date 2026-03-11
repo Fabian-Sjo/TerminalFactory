@@ -9,21 +9,24 @@
 #include <signal.h>
 
 #include "game/gameLoop.h"
-#define SCREEN_WIDTH 100
-#define SCREEN_HEIGHT 40
+
+Vector2Int screenSafezone = {5, 5};
+Vector2Int screenSize = {10, 10};
 
 int TERRAIN_PARTS[] = {SPRITE_WATER_DEEP, SPRITE_WATER, SPRITE_SAND, SPRITE_GRASS, SPRITE_STONE, SPRITE_SNOW};
 int pos_x = -20;
 int pos_y = -20;
-float zoom = 0.1;
-char board[SCREEN_WIDTH][SCREEN_HEIGHT];
+float zoom = 0.1f;
+
 int frame = 0;
 
 World *world = NULL;
 
 void render();
 
-void debugInfo(long deltaTime, KeyEvent keyEvent) {
+void debugInfo(long deltaTime, KeyEvent keyEvent)
+{
+	printf("screen width: %d height:%d\n", screenSize.x, screenSize.y);
 	printf("delta time: %10dns\n", deltaTime);
 	printf("Frame: %d  ", frame++);
 	printf("Pos x: %-3d Pos y: %-3d", pos_x, pos_y);
@@ -32,6 +35,7 @@ void debugInfo(long deltaTime, KeyEvent keyEvent) {
 
 void loop(long deltaTime)
 {
+	screenSize = getTermSize();
 	KeyEvent keyEvent = getKeyEvent();
 	debugInfo(deltaTime, keyEvent);
 	switch (keyEvent.pressed)
@@ -79,37 +83,22 @@ void loop(long deltaTime)
 		break;
 	}
 
-	for (int x = 0; x < SCREEN_WIDTH; x++)
-	{
-		for (int y = 0; y < SCREEN_HEIGHT; y++)
-		{
-			float perlinValue = perlin_Get2d(
-				(x - SCREEN_WIDTH / 2) * zoom + pos_x,
-				(y - SCREEN_HEIGHT / 2) * zoom + pos_y,
-				0.1, 1);
-			if (perlinValue >= 1)
-				perlinValue = 0.999999;
-			int terrainIndex = perlinValue * (sizeof(TERRAIN_PARTS) / sizeof(TERRAIN_PARTS[0]));
-			board[x][y] = TERRAIN_PARTS[terrainIndex];
-			// board[x][y] = (x + pos_x) % 10 + ((y + pos_y) % 10) * 10;
-		}
-	}
 	// printf("\033[2J"); // Clear entire screen
 	// printf("\033[H");  // Move cursor to home position
 
 	// pos_x++;
 
-	generateChunk(world, pos_x + SCREEN_WIDTH / 2, pos_y + SCREEN_HEIGHT / 2);
+	generateChunk(world, pos_x, pos_y);
 
 	render();
 }
 void render()
 {
 	printf("\033[H"); // scroll back terminal
-
-	for (int y = 0; y < SCREEN_HEIGHT; y++)
+	Vector2Int actualScreenSize = vectorSub(screenSize, screenSafezone);
+	for (int y = -actualScreenSize.y / 2; y < actualScreenSize.y / 2; y++)
 	{
-		for (int x = 0; x < SCREEN_WIDTH; x++)
+		for (int x = -actualScreenSize.x / 2; x < actualScreenSize.x / 2; x++)
 		{
 
 			GroundTile *groundTile = getGroundTile(world, x + pos_x, y + pos_y);
@@ -122,14 +111,14 @@ void render()
 			{
 				getTile(world, x + pos_x, y + pos_y);
 				Sprite sprite = getTileSprite(tile);
-				
+
 				groundSprite.icon = sprite.icon;
 				groundSprite.colorFore = sprite.colorFore;
 			}
 
 			addSpriteToBuffer(groundSprite);
 
-			//addCharToBuffer(' ');
+			// addCharToBuffer(' ');
 		}
 		addCharToBuffer(((y + pos_y) / 10) % 10 + '0');
 		addCharToBuffer((y + pos_y) % 10 + '0');

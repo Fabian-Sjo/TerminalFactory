@@ -3,6 +3,7 @@
 
 typedef struct
 {
+	
 	Sprite sprite;
 	int state;
 } SingleEntityData;

@@ -3,6 +3,9 @@ ground tiles
 building
 
 multichar sprite rendering
+
+tiles can have function instead of static sprites
+
 chunk rendering 
 new worldgeneration algorithm
 
