@@ -14,8 +14,6 @@ void newLine();
 
 void addCharToBuffer(char c);
 
-void addSpriteToBuffer(SpriteID spriteId);
-
 void addStrToBuffer(char *str);
 
 void setColorFore(Color colorForeground);
@@ -47,26 +45,30 @@ void addCharToBuffer(char c)
 
 	*(buffer + (nrOfElements + 1)) = '\0'; // Add null terminator
 }
-void addSpriteToBuffer(SpriteID spriteId)
+
+void addSpriteToBuffer(Sprite sprite)
+{
+	if (
+		currentForeColor.R != (sprite.colorFore.R) ||
+		currentForeColor.G != (sprite.colorFore.G) ||
+		currentForeColor.B != (sprite.colorFore.B))
+	{
+		setColorFore((sprite.colorFore));
+	}
+	if (
+		currentBackColor.R != (sprite.colorBack.R) ||
+		currentBackColor.G != (sprite.colorBack.G) ||
+		currentBackColor.B != (sprite.colorBack.B))
+	{
+		setColorBack((sprite.colorBack));
+	}
+	addCharToBuffer(sprite.icon);
+}
+void addSpriteIdToBuffer(SpriteID spriteId)
 {
 	Sprite *sprite = getSprite(spriteId);
-	if (
-		currentForeColor.R != (sprite->colorFore.R) ||
-		currentForeColor.G != (sprite->colorFore.G) ||
-		currentForeColor.B != (sprite->colorFore.B))
-	{
-		setColorFore((sprite->colorFore));
-	}
-	if (
-		currentBackColor.R != (sprite->colorBack.R) ||
-		currentBackColor.G != (sprite->colorBack.G) ||
-		currentBackColor.B != (sprite->colorBack.B))
-	{
-		setColorBack((sprite->colorBack));
-	}
-	addCharToBuffer(sprite->icon);
+	addSpriteToBuffer(*sprite);
 }
-
 void addStrToBuffer(char *str)
 {
 	while (*str)
@@ -93,10 +95,10 @@ void setColorBack(Color colorBackground)
 void updateColor()
 {
 	char strColor[48];
-	//snprintf(strColor, sizeof(strColor), "\033[0m");
-	snprintf(strColor, sizeof(strColor), "\033[38;2;%d;%d;%dm",currentForeColor.R,currentForeColor.G,currentForeColor.B);
+	// snprintf(strColor, sizeof(strColor), "\033[0m");
+	snprintf(strColor, sizeof(strColor), "\033[38;2;%d;%d;%dm", currentForeColor.R, currentForeColor.G, currentForeColor.B);
 	addStrToBuffer(strColor);
-	snprintf(strColor, sizeof(strColor), "\033[48;2;%d;%d;%dm",currentBackColor.R,currentBackColor.G,currentBackColor.B);
+	snprintf(strColor, sizeof(strColor), "\033[48;2;%d;%d;%dm", currentBackColor.R, currentBackColor.G, currentBackColor.B);
 	addStrToBuffer(strColor);
 }
 void flush()

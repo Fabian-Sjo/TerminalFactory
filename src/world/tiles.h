@@ -1,9 +1,13 @@
+#ifndef TILES_H
+#define TILES_H
+
+#include "../graphical/sprite.h"
 
 typedef enum
 {
-	TILE_NONE,
-	TILE_PART_OF_ENTITY,
-	TILE_ENTITY
+	TILE_MULTI_PART,
+	TILE_MULTI_CORE,
+	TILE_SINGLE_ENTITY
 } TileType;
 
 /*
@@ -15,27 +19,13 @@ has type
 			SINGLE (1 sprite, state, type)
 			MULTI CORE (n sprites, state, type)
 			*/
-typedef struct Data
-{
-	struct // PART OF ENTITY
-	{
-		int originX, originY;
-	};
-	struct // ENTITY
-	{
-		int state;
-		int sprite;
-	};
-} Data;
+		
+typedef struct Tile Tile;
 
-typedef struct
-{
+extern Tile testTile;
 
-	TileType type;
-	Data *data;
+TileType getTileType(Tile *tile);
+Sprite getTileSprite(Tile *tile);
+void getTileState();
 
-} Tile;
-
-void getType();
-void getSprite();
-void getState();
+#endif

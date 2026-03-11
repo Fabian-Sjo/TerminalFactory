@@ -6,14 +6,14 @@
 struct Map {
     int capacity;
     int number_of_elements;
-    long *key;
+    unsigned long long *key;
     void **value;
 };
 
 Map *mapCreate(unsigned long size_of_values) {
     Map *map = calloc(1,sizeof(Map));
 
-    long *key = calloc(INITIAL_SIZE, sizeof(long));
+    unsigned long long *key = calloc(INITIAL_SIZE, sizeof(unsigned long long));
     void **value = calloc(INITIAL_SIZE, size_of_values);
 
     map->capacity = INITIAL_SIZE;
@@ -22,14 +22,18 @@ Map *mapCreate(unsigned long size_of_values) {
     return map;
 }
 
-int mapAdd(Map *map, long key, void *value) {
+int mapAdd(Map *map, unsigned long long key, void *value) {
     if (mapGet(map, key) != NULL) {
         return 1;
     }
     if (map->capacity <= map->number_of_elements) {
         map->capacity *= 1.5;
-        map->key = realloc(map->key, map->capacity);
-        map->value = realloc(map->value, map->capacity);
+
+        unsigned long long *newKey = realloc(map->key, map->capacity * sizeof(map->key[0]));
+
+        map->key = newKey;
+        void **newValue = realloc(map->value, map->capacity * sizeof(map->value[0]));
+        map->value = newValue;
     }
     map->key[map->number_of_elements] = key;
     map->value[map->number_of_elements] = value;
@@ -38,7 +42,7 @@ int mapAdd(Map *map, long key, void *value) {
     return 0;
 }
 
-void *mapGet(Map *map, long key) {
+void *mapGet(Map *map, unsigned long long key) {
     for (int i = 0; i < map->number_of_elements; i++) {
         if (map->key[i] == key) {
           return map->value[i];
@@ -47,7 +51,7 @@ void *mapGet(Map *map, long key) {
     return NULL;
 }
 
-void *mapRemove(Map *map, long key) {
+void *mapRemove(Map *map, unsigned long long key) {
     void *value;
     int found_index;
 
