@@ -63,6 +63,7 @@ void generateChunk(World *world, int globalX, int globalY)
 		{
 			setChunkTile(chunk, x, y, NULL);
 
+
 			float perlinValue = perlin_Get2d(
 				x + chunkX * CHUNK_SIZE,
 				y + chunkY * CHUNK_SIZE,
@@ -87,12 +88,12 @@ void generateChunk(World *world, int globalX, int globalY)
 
 Tile *getTile(World *world, int x, int y)
 {
-	int chunkLocalX = (x + CHUNK_SIZE) % CHUNK_SIZE;
+	int chunkLocalX = ((x % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
 	if (x < 0)
 		x -= CHUNK_SIZE - 1;
 	int chunkX = x / CHUNK_SIZE;
 
-	int chunkLocalY = (y + CHUNK_SIZE) % CHUNK_SIZE;
+	int chunkLocalY = ((y % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
 	if (y < 0)
 		y -= CHUNK_SIZE - 1;
 	int chunkY = y / CHUNK_SIZE;

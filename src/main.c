@@ -117,7 +117,9 @@ void render()
 			Tile *tile = getTile(world, x + pos_x, y + pos_y);
 			if (tile != NULL)
 			{
+				getTile(world, x + pos_x, y + pos_y);
 				Sprite sprite = getTileSprite(tile);
+				
 				groundSprite.icon = sprite.icon;
 				groundSprite.colorFore = sprite.colorFore;
 			}
