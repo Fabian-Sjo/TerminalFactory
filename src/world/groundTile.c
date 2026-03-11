@@ -1,4 +1,6 @@
 #include "groundTile.h"
+#include <stdlib.h>
+
 struct GroundTile
 {
 	Sprite sprite;

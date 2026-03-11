@@ -23,14 +23,17 @@ World *world = NULL;
 
 void render();
 
-void loop(long deltaTime)
-{
-
+void debugInfo(long deltaTime, KeyEvent keyEvent) {
 	printf("delta time: %10dns\n", deltaTime);
-	KeyEvent keyEvent = getKeyEvent();
 	printf("Frame: %d  ", frame++);
 	printf("Pos x: %-3d Pos y: %-3d", pos_x, pos_y);
 	printf("pressed: %-10s released: %-10s held: %-10s ", keyToString(keyEvent.pressed), keyToString(keyEvent.released), keyToString(keyEvent.held));
+}
+
+void loop(long deltaTime)
+{
+	KeyEvent keyEvent = getKeyEvent();
+	debugInfo(deltaTime, keyEvent);
 	switch (keyEvent.pressed)
 	{
 	case KEY_Q:
