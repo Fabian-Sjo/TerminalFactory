@@ -3,6 +3,8 @@
 
 #include "tiles.h"
 #include "groundTile.h"
+#include "../utils/vector2.h"
+#include "../graphical/renderer.h"
 
 typedef struct World World;
 
@@ -10,9 +12,7 @@ World *createWorld();
 int chunkIsGenerated(World *world, int x, int y);
 void generateChunk(World *world, int x, int y);
 
-//returns 2d array packed in to 1D
-// sprite[x + y * width]
-Sprite *areaAsSprites(World *world, Vector2Int posA, Vector2Int posB);
+void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int size, Vector2Int canvasPos);
 
 Tile *getTile(World *world, int x, int y);
 

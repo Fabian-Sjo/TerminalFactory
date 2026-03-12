@@ -1,17 +1,19 @@
 
 
 #include "chunk.h"
-#include "../utils/map.h"
 #include "../utils/perlin.h"
+#include "../utils/vector2.h"
+#include "../graphical/renderer.h"
+#include "../utils/map.h"
 #include <stdlib.h>
 #include "tiles.h"
-#include "../utils/vector2.h"
+#include "world.h"
 #include <stdio.h>
 
-typedef struct
+struct World
 {
 	Map *chunks;
-} World;
+};
 
 Chunk *getChunk(World *world, unsigned int x, unsigned int y)
 {
@@ -93,84 +95,85 @@ int divFloor(int a, int b)
 
 	return q;
 }
-Sprite *areaAsSprites(World *world, Vector2Int posA, Vector2Int posB)
+
+void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int size, Vector2Int canvasPos)
 {
-    static Sprite *sprites = NULL;
-    static int capacity = 0;
+	Vector2Int posB = vectorAdd(posA, size);
+	int width = posB.x - posA.x;
+	int height = posB.y - posA.y;
+	int required = width * height;
 
-    int width = posB.x - posA.x;
-    int height = posB.y - posA.y;
-    int required = width * height;
+	Vector2Int minChunk = {
+		divFloor(posA.x, CHUNK_SIZE),
+		divFloor(posA.y, CHUNK_SIZE)};
 
-    if (required > capacity)
-    {
-        capacity = required;
-        sprites = realloc(sprites, capacity * sizeof(Sprite));
-    }
+	Vector2Int maxChunk = {
+		divFloor(posB.x, CHUNK_SIZE),
+		divFloor(posB.y, CHUNK_SIZE)};
 
-    Vector2Int minChunk = {
-        divFloor(posA.x, CHUNK_SIZE),
-        divFloor(posA.y, CHUNK_SIZE)
-    };
+	for (int chunkX = minChunk.x; chunkX <= maxChunk.x; chunkX++)
+	{
+		for (int chunkY = minChunk.y; chunkY <= maxChunk.y; chunkY++)
+		{
+			Chunk *chunk = getChunk(world, chunkX, chunkY);
 
-    Vector2Int maxChunk = {
-        divFloor(posB.x, CHUNK_SIZE),
-        divFloor(posB.y, CHUNK_SIZE)
-    };
+			int startX = posA.x - chunkX * CHUNK_SIZE;
+			int endX = posB.x - chunkX * CHUNK_SIZE;
 
-    for (int chunkX = minChunk.x; chunkX <= maxChunk.x; chunkX++)
-    {
-        for (int chunkY = minChunk.y; chunkY <= maxChunk.y; chunkY++)
-        {
-            Chunk *chunk = getChunk(world, chunkX, chunkY);
+			int startY = posA.y - chunkY * CHUNK_SIZE;
+			int endY = posB.y - chunkY * CHUNK_SIZE;
 
-            int startX = posA.x - chunkX * CHUNK_SIZE;
-            int endX = posB.x - chunkX * CHUNK_SIZE;
+			if (startX < 0)
+				startX = 0;
+			if (startY < 0)
+				startY = 0;
+			if (endX > CHUNK_SIZE)
+				endX = CHUNK_SIZE;
+			if (endY > CHUNK_SIZE)
+				endY = CHUNK_SIZE;
 
-            int startY = posA.y - chunkY * CHUNK_SIZE;
-            int endY = posB.y - chunkY * CHUNK_SIZE;
+			int chunkWorldX = chunkX * CHUNK_SIZE;
+			int chunkWorldY = chunkY * CHUNK_SIZE;
 
-            if (startX < 0) startX = 0;
-            if (startY < 0) startY = 0;
-            if (endX > CHUNK_SIZE) endX = CHUNK_SIZE;
-            if (endY > CHUNK_SIZE) endY = CHUNK_SIZE;
+			for (int localX = startX; localX < endX; localX++)
+			{
+				for (int localY = startY; localY < endY; localY++)
+				{
+					int globalX = chunkWorldX + localX;
+					int globalY = chunkWorldY + localY;
 
-            int chunkWorldX = chunkX * CHUNK_SIZE;
-            int chunkWorldY = chunkY * CHUNK_SIZE;
+					Sprite sprite = {'X', {200, 0, 0}, COLOR_BLACK};
 
-            for (int localX = startX; localX < endX; localX++)
-            {
-                for (int localY = startY; localY < endY; localY++)
-                {
-                    int globalX = chunkWorldX + localX;
-                    int globalY = chunkWorldY + localY;
+					if (chunk)
+					{
+						GroundTile *groundTile = getChunkGroundTile(chunk, localX, localY);
+						sprite = getGroundTileSprite(groundTile);
 
-                    Sprite sprite = {'X', {200,0,0}, COLOR_BLACK};
+						Tile *tile = getChunkTile(chunk, localX, localY);
+						if (tile)
+						{
+							Sprite tileSprite = getTileSprite(tile);
+							sprite.icon = tileSprite.icon;
+							sprite.colorFore = tileSprite.colorFore;
+						}
+					}
 
-                    if (chunk)
-                    {
-                        GroundTile *groundTile = getChunkGroundTile(chunk, localX, localY);
-                        sprite = getGroundTileSprite(groundTile);
+					int screenX = globalX - posA.x;
+					int screenY = globalY - posA.y;
 
-                        Tile *tile = getChunkTile(chunk, localX, localY);
-                        if (tile)
-                        {
-                            Sprite tileSprite = getTileSprite(tile);
-                            sprite.icon = tileSprite.icon;
-                            sprite.colorFore = tileSprite.colorFore;
-                        }
-                    }
+					int canvasX = canvasPos.x + screenX;
+					int canvasY = canvasPos.y + screenY;
 
-                    int screenX = globalX - posA.x;
-                    int screenY = globalY - posA.y;
+					if (canvasX < 0 || canvasY < 0 ||
+						canvasX >= canvas->size.x ||
+						canvasY >= canvas->size.y)
+						continue;
 
-                    sprites[screenY * width + screenX] = sprite;
-                }
-            }
-        }
-    }
-
-    return sprites;
+					canvas->sprites[canvasX + canvasY * canvas->size.x] = sprite;
+				}
+			}
+		}
+	}
 }
 
 Tile *getTile(World *world, int x, int y)

@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include "sprite.h"
 #include "color.h"
+#include "renderer.h"
+#include <stdlib.h>
 
 char *buffer = NULL;
 int nrOfElements = 0;
@@ -22,10 +24,17 @@ void setColorBack(Color colorBackground);
 void updateColor();
 void flush();
 
+Canvas *getCanvas(Vector2Int size)
+{
+	Canvas *newCanvas = malloc(sizeof(Canvas));
+	newCanvas->size = size;
+	newCanvas->sprites = malloc(sizeof(Sprite) * size.x * size.y);
+	return newCanvas;
+}
+
 void newLine()
 {
-	*(buffer + nrOfElements * sizeof(buffer[0])) = *"\n";
-	nrOfElements++;
+	addCharToBuffer('\n');
 }
 
 void addCharToBuffer(char c)
@@ -47,6 +56,16 @@ void addCharToBuffer(char c)
 	*(buffer + (nrOfElements + 1)) = '\0'; // Add null terminator
 }
 
+void addCanvasToBuffer(Canvas *canvas)
+{
+	int nrOfElements = canvas->size.x * canvas->size.y;
+	for (size_t i = 0; i < nrOfElements; i++)
+	{
+		if (i % canvas->size.x == 0)
+			newLine();
+		addSpriteToBuffer(canvas->sprites[i]);
+	}
+}
 void addSpriteToBuffer(Sprite sprite)
 {
 	if (
@@ -63,7 +82,10 @@ void addSpriteToBuffer(Sprite sprite)
 	{
 		setColorBack((sprite.colorBack));
 	}
-	addCharToBuffer(sprite.icon);
+	char c = sprite.icon;
+	if (c == '\0')
+		c = ' ';
+	addCharToBuffer(c);
 }
 void addSpriteIdToBuffer(SpriteID spriteId)
 {

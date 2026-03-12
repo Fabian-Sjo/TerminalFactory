@@ -13,7 +13,7 @@
 #include "game/gameLoop.h"
 
 Vector2Int screenSafezone = {8, 10};
-Vector2Int screenSize = {10, 10};
+Vector2Int screenSize = {44, 22};
 
 int TERRAIN_PARTS[] = {SPRITE_WATER_DEEP, SPRITE_WATER, SPRITE_SAND, SPRITE_GRASS, SPRITE_STONE, SPRITE_SNOW};
 int pos_x = 20;
@@ -23,13 +23,13 @@ float zoom = 0.1f;
 int frame = 0;
 
 World *world = NULL;
-
+Canvas *canvas = NULL;
 void render();
 
 void debugInfo(long deltaTime, KeyEvent keyEvent)
 {
 	printf("screen width: %d height:%d\n", screenSize.x, screenSize.y);
-	printf("delta time: %10dns FPS: %3f\n", deltaTime,(1.0/deltaTime * 1000000000));
+	printf("delta time: %10dns FPS: %3f\n", deltaTime, (1.0 / deltaTime * 1000000000));
 	printf("Frame: %d  ", frame++);
 	printf("Pos x: %-3d Pos y: %-3d", pos_x, pos_y);
 	printf("pressed: %-10s released: %-10s held: %-10s \n", keyToString(keyEvent.pressed), keyToString(keyEvent.released), keyToString(keyEvent.held));
@@ -99,18 +99,21 @@ void render()
 	Vector2Int actualScreenSize = vectorSub(screenSize, screenSafezone);
 	Vector2Int position = {pos_x, pos_y};
 
-	Sprite *sprites = areaAsSprites(world, position, (Vector2Int)vectorAdd(position, actualScreenSize));
-	for (int y = 0; y < actualScreenSize.y; y++)
-	{
-		for (int x = 0; x < actualScreenSize.x; x++)
-		{
+	// writeAreaToCanvas(world, canvas, position, (Vector2Int)vectorAdd(position, actualScreenSize), (Vector2Int){0, 0});
+	writeAreaToCanvas(world, canvas, position, (Vector2Int){10, 10}, (Vector2Int){10, 10});
 
-			addSpriteToBuffer(sprites[y * actualScreenSize.x + x]);
-			// addSpriteToBuffer((Sprite){'X', {200, 0, 0}, COLOR_BLACK});
-			// addCharToBuffer('*');
-		}
-		newLine();
-	}
+	addCanvasToBuffer(canvas);
+	// for (int y = 0; y < actualScreenSize.y; y++)
+	//{
+	//	for (int x = 0; x < actualScreenSize.x; x++)
+	//	{
+	//
+	//		addSpriteToBuffer(sprites[y * actualScreenSize.x + x]);
+	//		// addSpriteToBuffer((Sprite){'X', {200, 0, 0}, COLOR_BLACK});
+	//		// addCharToBuffer('*');
+	//	}
+	//	newLine();
+	//}
 
 	// addCharToBuffer(((y + pos_y) / 10) % 10 + '0');
 	// addCharToBuffer((y + pos_y) % 10 + '0');
@@ -125,7 +128,8 @@ void start()
 	printf("\33[?25l"); // reset ansi
 
 	world = createWorld();
-	areaAsSprites(world, (Vector2Int){1, 1}, (Vector2Int){3, 3});
+	canvas = getCanvas(screenSize);
+	// areaAsSprites(world, (Vector2Int){1, 1}, (Vector2Int){3, 3});
 
 	// areaAsSprites(world, (Vector2Int){CHUNK_SIZE + 1, 1}, (Vector2Int){CHUNK_SIZE + 3, 3});
 
@@ -153,7 +157,7 @@ int main()
 	addFunctionStart(&start);
 	addFunctionStop(&stop);
 	addFunctionLoop(&loop);
-	setFps(30);
+	setFps(30000);
 	startGame();
 
 	return 0;
