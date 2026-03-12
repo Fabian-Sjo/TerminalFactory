@@ -1,6 +1,7 @@
 
 
 #include "chunk.h"
+#include "chunkGenerator.h"
 #include "../utils/map.h"
 #include "../utils/vector2.h"
 #include "../utils/perlin.h"
@@ -8,6 +9,7 @@
 #include "tiles.h"
 
 #define REGION_SIZE 16
+#define START_ALLOCATION 8
 
 typedef struct {
 	Chunk chunks[REGION_SIZE][REGION_SIZE];
@@ -19,13 +21,19 @@ typedef struct
 	Region **regionQuad[4];
 } World;
 
-void mög(World *world, Vector2Int chunckCoords) {
+void setChunk(World *world, Vector2Int chunckCoords, Chunk *chunk);
+
+Chunk *getChunk(World *world, Vector2Int chunckCoords)
+{
 	int quadrum = (!chunckCoords.x)*2 + !chunckCoords.y;
 	int x = (chunckCoords.x < 0) ? -chunckCoords.x : chunckCoords.x;
 	int y = (chunckCoords.y < 0) ? -chunckCoords.y : chunckCoords.y;
+
 	if (x / REGION_SIZE < world->quadSize[quadrum].x ||
 			y / REGION_SIZE < world->quadSize[quadrum].y) {
-		generateChunk(chunckCoords);
+		Chunk *newChunk = generateChunk(chunckCoords);
+		setChunk(world, chunckCoords, newChunk);
+		return newChunk;
 	}
 	Chunk chunk = world->regionQuad[quadrum][x / REGION_SIZE][y / REGION_SIZE]
 			.chunks[x % REGION_SIZE][y % REGION_SIZE];
@@ -33,77 +41,34 @@ void mög(World *world, Vector2Int chunckCoords) {
 	return returnChunk;
 }
 
-Chunk *getChunk(World *world, Vector2Int chunckCoords)
-{
-	if (chunckCoords.x >= 0) {
-		if (chunckCoords.y >= 0) {
-			if (chunckCoords.x / REGION_SIZE < world->quadSize1.x ||
-					chunckCoords.y / REGION_SIZE < world->quadSize1.y) {
-				generateChunk(chunckCoords);
-			}
-			Chunk chunk = world->regionQuad1
-					[chunckCoords.x / REGION_SIZE][chunckCoords.y / REGION_SIZE]
-					.chunks[chunckCoords.x % REGION_SIZE][chunckCoords.y % REGION_SIZE];	
-			Chunk *returnChunk = &chunk;
-			return returnChunk;
-		}
-		else {
-			if (chunckCoords.x / REGION_SIZE < world->quadSize1.x ||
-					-chunckCoords.y / REGION_SIZE < world->quadSize1.y) {
-				generateChunk(chunckCoords);
-			}
-			Chunk chunk = world->regionQuad4
-					[chunckCoords.x / REGION_SIZE][-chunckCoords.y / REGION_SIZE]
-					.chunks[chunckCoords.x % REGION_SIZE][-chunckCoords.y % REGION_SIZE];	
-			Chunk *returnChunk = &chunk;
-			return returnChunk;
-		}
-	}
-	else {
-		if (chunckCoords.y >= 0) {
-			if (-chunckCoords.x / REGION_SIZE < world->quadSize1.x ||
-					chunckCoords.y / REGION_SIZE < world->quadSize1.y) {
-				generateChunk(chunckCoords);
-			}
-			Chunk chunk = world->regionQuad2
-					[-chunckCoords.x / REGION_SIZE][chunckCoords.y / REGION_SIZE]
-					.chunks[-chunckCoords.x % REGION_SIZE][chunckCoords.y % REGION_SIZE];	
-			Chunk *returnChunk = &chunk;
-			return returnChunk;
-		}
-		else {
-			if (-chunckCoords.x / REGION_SIZE < world->quadSize1.x ||
-					-chunckCoords.y / REGION_SIZE < world->quadSize1.y) {
-				generateChunk(chunckCoords);
-			}
-			Chunk chunk = world->regionQuad3
-					[-chunckCoords.x / REGION_SIZE][-chunckCoords.y / REGION_SIZE]
-					.chunks[-chunckCoords.x % REGION_SIZE][-chunckCoords.y % REGION_SIZE];	
-			Chunk *returnChunk = &chunk;
-			return returnChunk;
-		}
-	}
-}
-
 void setChunk(World *world, Vector2Int chunckCoords, Chunk *chunk)
 {
-	unsigned long long key = x;
-	key <<= 32;
-	key |= y;
-	mapAdd(world->chunks, key, chunk);
+	int quadrum = (!chunckCoords.x)*2 + !chunckCoords.y;
+	int x = (chunckCoords.x < 0) ? -chunckCoords.x : chunckCoords.x;
+	int y = (chunckCoords.y < 0) ? -chunckCoords.y : chunckCoords.y;
+
+	world->regionQuad[quadrum][x / REGION_SIZE][y / REGION_SIZE]
+			.chunks[x % REGION_SIZE][y % REGION_SIZE] = *chunk;
 }
 
 World *createWorld()
 {
 	World *world = malloc(sizeof(World));
-	world->chunks = mapCreate(sizeof(Map *));
+
+	for (int i = 0; i < 4; i++) {
+		world->regionQuad[i] = calloc(START_ALLOCATION, sizeof(Region **));
+		for (int j = 0; j < START_ALLOCATION; j++) {
+			world->regionQuad[i][j] = calloc(START_ALLOCATION, sizeof(Region *));
+		}
+	}
+
 	return world;
 }
+/*
 int chunkIsGenerated(World *world, int chunkX, int chunkY)
 {
 	return (getChunk(world, chunkX, chunkY) != NULL);
 }
-
 void generateChunk(World *world, int globalX, int globalY)
 {
 	if (globalX < 0)
@@ -146,7 +111,7 @@ void generateChunk(World *world, int globalX, int globalY)
 		}
 	}
 	setChunk(world, chunkX, chunkY, chunk);
-}
+} */
 //{-1,-1}
 
 // chunk{-1,-1}

@@ -1,7 +1,7 @@
 
 #include "chunkGenerator.h"
 
-Chunk generateChunk(Vector2Int chunkCoordinate);
+Chunk *generateChunk(Vector2Int chunkCoordinate);
 
 Tile generateTile(Vector2Int globalPos);
 
