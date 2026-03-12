@@ -1,7 +1,9 @@
 #include "tiles.h"
+#include <stdlib.h>
 
 typedef struct
 {
+	
 	Sprite sprite;
 	int state;
 } SingleEntityData;
@@ -46,6 +48,9 @@ Sprite getMulitTileSprite(Tile *originTile, int offsetX, int offsetY)
 }
 Sprite getTileSprite(Tile *tile)
 {
+	if(tile != NULL){
+		int a = 1;
+	}
 	switch (tile->type)
 	{
 	case TILE_SINGLE_ENTITY:
@@ -56,7 +61,7 @@ Sprite getTileSprite(Tile *tile)
 			tile->part.offsetX,
 			tile->part.offsetY);
 	case TILE_MULTI_CORE:
-		getMulitTileSprite(tile, 0, 0);
+		return getMulitTileSprite(tile, 0, 0);
 		break;
 
 	default:

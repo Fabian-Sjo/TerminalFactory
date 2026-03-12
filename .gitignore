@@ -1,0 +1,14 @@
+out/*
+.vscode/*
+build.bat
+cFiles.bash
+makefile
+vc140.pdb
+test/*
+makefile
+build.bat
+cFiles.bash
+test/**
+**/*.pdb
+.vs/*
+helpStuffs/*.exe

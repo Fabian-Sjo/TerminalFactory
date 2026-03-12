@@ -3,8 +3,11 @@
 #include "../graphical/sprite.h"
 
 typedef struct GroundTile GroundTile;
+extern GroundTile GROUND_TILE_WATER;
+extern GroundTile GROUND_TILE_GRASS_1;
+extern GroundTile GROUND_TILE_GRASS_2;
+extern GroundTile GROUND_TILE_GRASS_3;
 
-
-Sprite *getGroundTileSprite(GroundTile *groundTile);
+Sprite getGroundTileSprite(GroundTile *groundTile);
 
 #endif
