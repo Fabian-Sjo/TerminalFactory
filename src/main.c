@@ -2,6 +2,7 @@
 #include "utils/perlin.h"
 #include "graphical/renderer.h"
 #include "game/input.h"
+#include "world/chunk.h"
 #include "world/world.h"
 #include "utils/map.h"
 
@@ -9,6 +10,8 @@
 #include <signal.h>
 
 #include "game/gameLoop.h"
+
+#define RENDER_DISTANCE 12
 
 Vector2Int screenSafezone = {5, 5};
 Vector2Int screenSize = {10, 10};
@@ -56,10 +59,10 @@ void loop(long deltaTime)
 		pos_y--;
 		break;
 	case KEY_A:
-		pos_x--;
+		pos_x -= 2;
 		break;
 	case KEY_D:
-		pos_x++;
+		pos_x += 2;
 		break;
 	default:
 		break;
@@ -73,10 +76,10 @@ void loop(long deltaTime)
 		pos_y--;
 		break;
 	case KEY_A:
-		pos_x--;
+		pos_x -= 2;
 		break;
 	case KEY_D:
-		pos_x++;
+		pos_x += 2;
 		break;
 
 	default:
@@ -88,7 +91,11 @@ void loop(long deltaTime)
 
 	// pos_x++;
 
-	generateChunk(world, pos_x, pos_y);
+	for (int x = pos_x - RENDER_DISTANCE*CHUNK_SIZE/2; x < pos_x + RENDER_DISTANCE*CHUNK_SIZE/2; x++) {
+		for (int y = pos_y - RENDER_DISTANCE*CHUNK_SIZE/2; y < pos_y + RENDER_DISTANCE/2; y++) {
+            	generateChunk(world, x, y);
+            }
+        }
 
 	render();
 }

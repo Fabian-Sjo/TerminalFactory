@@ -4,9 +4,8 @@
 #include "tiles.h"
 #include "groundTile.h"
 
-#define CHUNK_SIZE 8
-
-typedef struct Chunk
+#define CHUNK_SIZE 32
+typedef struct
 {
 	Tile *tiles[CHUNK_SIZE][CHUNK_SIZE];
 	GroundTile *groundTiles[CHUNK_SIZE][CHUNK_SIZE];

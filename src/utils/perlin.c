@@ -69,7 +69,7 @@ double perlin_Get2d(double x, double y, double freq, int depth)
         div += 256 * amp;
         fin += noise2d( xa, ya ) * amp;
         amp /= 2;
-        xa *= 2;
+        xa *= 4;
         ya *= 2;
     }
     return fin/div;

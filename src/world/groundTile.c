@@ -8,22 +8,22 @@ struct GroundTile
 
 GroundTile GROUND_TILE_WATER =
 	{
-		.sprite = {'~',
+		.sprite = {' ',
 				   COLOR_BLACK,
 				   {0, 0, 100}}};
 GroundTile GROUND_TILE_GRASS_1 =
 	{
-		.sprite = {'.',
+		.sprite = {' ',
 				   COLOR_BLACK,
 				   {0, 55, 0}}};
 GroundTile GROUND_TILE_GRASS_2 =
 	{
-		.sprite = {':',
+		.sprite = {' ',
 				   COLOR_BLACK,
 				   {0, 67, 0}}};
 GroundTile GROUND_TILE_GRASS_3 =
 	{
-		.sprite = {'^',
+		.sprite = {' ',
 				   COLOR_BLACK,
 				   {0, 80, 0}}};
 Sprite getGroundTileSprite(GroundTile *groundTile)

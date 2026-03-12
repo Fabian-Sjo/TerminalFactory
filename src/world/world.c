@@ -2,24 +2,90 @@
 
 #include "chunk.h"
 #include "../utils/map.h"
+#include "../utils/vector2.h"
 #include "../utils/perlin.h"
 #include <stdlib.h>
 #include "tiles.h"
 
+#define REGION_SIZE 16
+
+typedef struct {
+	Chunk chunks[REGION_SIZE][REGION_SIZE];
+} Region;
+
 typedef struct
 {
-	Map *chunks;
+	Vector2Int quadSize[4];
+	Region **regionQuad[4];
 } World;
 
-Chunk *getChunk(World *world, unsigned int x, unsigned int y)
-{
-	unsigned long long key = x;
-	key <<= 32;
-	key |= y;
-	return mapGet(world->chunks, key);
+void mög(World *world, Vector2Int chunckCoords) {
+	int quadrum = (!chunckCoords.x)*2 + !chunckCoords.y;
+	int x = (chunckCoords.x < 0) ? -chunckCoords.x : chunckCoords.x;
+	int y = (chunckCoords.y < 0) ? -chunckCoords.y : chunckCoords.y;
+	if (x / REGION_SIZE < world->quadSize[quadrum].x ||
+			y / REGION_SIZE < world->quadSize[quadrum].y) {
+		generateChunk(chunckCoords);
+	}
+	Chunk chunk = world->regionQuad[quadrum][x / REGION_SIZE][y / REGION_SIZE]
+			.chunks[x % REGION_SIZE][y % REGION_SIZE];
+	Chunk *returnChunk = &chunk;
+	return returnChunk;
 }
 
-void setChunk(World *world, unsigned int x, unsigned int y, Chunk *chunk)
+Chunk *getChunk(World *world, Vector2Int chunckCoords)
+{
+	if (chunckCoords.x >= 0) {
+		if (chunckCoords.y >= 0) {
+			if (chunckCoords.x / REGION_SIZE < world->quadSize1.x ||
+					chunckCoords.y / REGION_SIZE < world->quadSize1.y) {
+				generateChunk(chunckCoords);
+			}
+			Chunk chunk = world->regionQuad1
+					[chunckCoords.x / REGION_SIZE][chunckCoords.y / REGION_SIZE]
+					.chunks[chunckCoords.x % REGION_SIZE][chunckCoords.y % REGION_SIZE];	
+			Chunk *returnChunk = &chunk;
+			return returnChunk;
+		}
+		else {
+			if (chunckCoords.x / REGION_SIZE < world->quadSize1.x ||
+					-chunckCoords.y / REGION_SIZE < world->quadSize1.y) {
+				generateChunk(chunckCoords);
+			}
+			Chunk chunk = world->regionQuad4
+					[chunckCoords.x / REGION_SIZE][-chunckCoords.y / REGION_SIZE]
+					.chunks[chunckCoords.x % REGION_SIZE][-chunckCoords.y % REGION_SIZE];	
+			Chunk *returnChunk = &chunk;
+			return returnChunk;
+		}
+	}
+	else {
+		if (chunckCoords.y >= 0) {
+			if (-chunckCoords.x / REGION_SIZE < world->quadSize1.x ||
+					chunckCoords.y / REGION_SIZE < world->quadSize1.y) {
+				generateChunk(chunckCoords);
+			}
+			Chunk chunk = world->regionQuad2
+					[-chunckCoords.x / REGION_SIZE][chunckCoords.y / REGION_SIZE]
+					.chunks[-chunckCoords.x % REGION_SIZE][chunckCoords.y % REGION_SIZE];	
+			Chunk *returnChunk = &chunk;
+			return returnChunk;
+		}
+		else {
+			if (-chunckCoords.x / REGION_SIZE < world->quadSize1.x ||
+					-chunckCoords.y / REGION_SIZE < world->quadSize1.y) {
+				generateChunk(chunckCoords);
+			}
+			Chunk chunk = world->regionQuad3
+					[-chunckCoords.x / REGION_SIZE][-chunckCoords.y / REGION_SIZE]
+					.chunks[-chunckCoords.x % REGION_SIZE][-chunckCoords.y % REGION_SIZE];	
+			Chunk *returnChunk = &chunk;
+			return returnChunk;
+		}
+	}
+}
+
+void setChunk(World *world, Vector2Int chunckCoords, Chunk *chunk)
 {
 	unsigned long long key = x;
 	key <<= 32;
