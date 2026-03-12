@@ -4,6 +4,7 @@
 #include "tiles.h"
 #include "groundTile.h"
 
+//Can only be power of 2 due to "x & (CHUNK_SIZE - 1)"
 #define CHUNK_SIZE 8
 
 typedef struct Chunk

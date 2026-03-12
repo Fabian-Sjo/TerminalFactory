@@ -27,6 +27,7 @@ void newLine()
 	*(buffer + nrOfElements * sizeof(buffer[0])) = *"\n";
 	nrOfElements++;
 }
+
 void addCharToBuffer(char c)
 {
 	if (bufferSize - 3 <= nrOfElements)

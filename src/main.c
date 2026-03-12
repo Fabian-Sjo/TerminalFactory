@@ -4,18 +4,20 @@
 #include "game/input.h"
 #include "world/world.h"
 #include "utils/map.h"
+#include "world/chunk.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <signal.h>
 
 #include "game/gameLoop.h"
 
-Vector2Int screenSafezone = {5, 5};
+Vector2Int screenSafezone = {8, 10};
 Vector2Int screenSize = {10, 10};
 
 int TERRAIN_PARTS[] = {SPRITE_WATER_DEEP, SPRITE_WATER, SPRITE_SAND, SPRITE_GRASS, SPRITE_STONE, SPRITE_SNOW};
-int pos_x = -20;
-int pos_y = -20;
+int pos_x = 20;
+int pos_y = 20;
 float zoom = 0.1f;
 
 int frame = 0;
@@ -27,10 +29,10 @@ void render();
 void debugInfo(long deltaTime, KeyEvent keyEvent)
 {
 	printf("screen width: %d height:%d\n", screenSize.x, screenSize.y);
-	printf("delta time: %10dns\n", deltaTime);
+	printf("delta time: %10dns FPS: %3f\n", deltaTime,(1.0/deltaTime * 1000000000));
 	printf("Frame: %d  ", frame++);
 	printf("Pos x: %-3d Pos y: %-3d", pos_x, pos_y);
-	printf("pressed: %-10s released: %-10s held: %-10s ", keyToString(keyEvent.pressed), keyToString(keyEvent.released), keyToString(keyEvent.held));
+	printf("pressed: %-10s released: %-10s held: %-10s \n", keyToString(keyEvent.pressed), keyToString(keyEvent.released), keyToString(keyEvent.held));
 }
 
 void loop(long deltaTime)
@@ -94,37 +96,28 @@ void loop(long deltaTime)
 }
 void render()
 {
-	printf("\033[H"); // scroll back terminal
 	Vector2Int actualScreenSize = vectorSub(screenSize, screenSafezone);
-	for (int y = -actualScreenSize.y / 2; y < actualScreenSize.y / 2; y++)
+	Vector2Int position = {pos_x, pos_y};
+
+	Sprite *sprites = areaAsSprites(world, position, (Vector2Int)vectorAdd(position, actualScreenSize));
+	for (int y = 0; y < actualScreenSize.y; y++)
 	{
-		for (int x = -actualScreenSize.x / 2; x < actualScreenSize.x / 2; x++)
+		for (int x = 0; x < actualScreenSize.x; x++)
 		{
 
-			GroundTile *groundTile = getGroundTile(world, x + pos_x, y + pos_y);
-			Sprite groundSprite = {' ', {200, 0, 0}, COLOR_BLACK};
-
-			groundSprite = getGroundTileSprite(groundTile);
-
-			Tile *tile = getTile(world, x + pos_x, y + pos_y);
-			if (tile != NULL)
-			{
-				getTile(world, x + pos_x, y + pos_y);
-				Sprite sprite = getTileSprite(tile);
-
-				groundSprite.icon = sprite.icon;
-				groundSprite.colorFore = sprite.colorFore;
-			}
-
-			addSpriteToBuffer(groundSprite);
-
-			// addCharToBuffer(' ');
+			addSpriteToBuffer(sprites[y * actualScreenSize.x + x]);
+			// addSpriteToBuffer((Sprite){'X', {200, 0, 0}, COLOR_BLACK});
+			// addCharToBuffer('*');
 		}
-		addCharToBuffer(((y + pos_y) / 10) % 10 + '0');
-		addCharToBuffer((y + pos_y) % 10 + '0');
 		newLine();
 	}
+
+	// addCharToBuffer(((y + pos_y) / 10) % 10 + '0');
+	// addCharToBuffer((y + pos_y) % 10 + '0');
+
 	flush();
+	printf("wewew");  // scroll back terminal
+	printf("\033[H"); // scroll back terminal
 }
 void start()
 {
@@ -132,6 +125,10 @@ void start()
 	printf("\33[?25l"); // reset ansi
 
 	world = createWorld();
+	areaAsSprites(world, (Vector2Int){1, 1}, (Vector2Int){3, 3});
+
+	// areaAsSprites(world, (Vector2Int){CHUNK_SIZE + 1, 1}, (Vector2Int){CHUNK_SIZE + 3, 3});
+
 	// generateChunk(world, 1, 1);
 }
 void stop()
@@ -146,14 +143,17 @@ void stop()
 
 int main()
 {
-	// signal(SIGINT, stopGame);
 
+	// has to be power of 2
+	assert(CHUNK_SIZE && !(CHUNK_SIZE & (CHUNK_SIZE - 1)));
+
+	// signal(SIGINT, stopGame);
 	printf("\033[0");
 	addFunctionStart(&initInput);
 	addFunctionStart(&start);
 	addFunctionStop(&stop);
 	addFunctionLoop(&loop);
-	setFps(50);
+	setFps(30);
 	startGame();
 
 	return 0;
