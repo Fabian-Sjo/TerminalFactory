@@ -29,7 +29,7 @@ void setChunk(World *world, unsigned int x, unsigned int y, Chunk *chunk)
 
 World *createWorld()
 {
-	World *world = malloc(sizeof(world));
+	World *world = malloc(sizeof(World));
 	world->chunks = mapCreate(sizeof(Map *));
 	return world;
 }
