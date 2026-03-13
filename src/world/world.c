@@ -1,13 +1,18 @@
 
 
 #include "chunk.h"
-#include "../utils/perlin.h"
-#include "../utils/vector2.h"
-#include "../graphical/renderer.h"
-#include "../utils/map.h"
-#include <stdlib.h>
 #include "tiles.h"
 #include "world.h"
+
+#include "../utils/perlin.h"
+#include "../utils/vector2.h"
+
+#include "../graphical/renderer.h"
+#include "../graphical/canvas.h"
+
+#include "../utils/map.h"
+
+#include <stdlib.h>
 #include <stdio.h>
 
 struct World
@@ -165,11 +170,11 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 					int canvasY = canvasPos.y + screenY;
 
 					if (canvasX < 0 || canvasY < 0 ||
-						canvasX >= canvas->size.x ||
-						canvasY >= canvas->size.y)
+						canvasX >= canvasGetSize(canvas).x ||
+						canvasY >= canvasGetSize(canvas).y)
 						continue;
-
-					canvas->sprites[canvasX + canvasY * canvas->size.x] = sprite;
+					canvasSetSprite(canvas,(Vector2Int){canvasX,canvasY},sprite);
+					//canvas->sprites[canvasX + canvasY * canvas->size.x] = sprite;
 				}
 			}
 		}

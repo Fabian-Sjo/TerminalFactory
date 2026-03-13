@@ -2,17 +2,10 @@
 #define RENDERER_H
 
 #include "sprite.h"
+#include "canvas.h"
+
 #include "..\utils\vector2.h"
 
-typedef struct Canvas
-{
-	Vector2Int size;
-
-	// 2d array packed in to 1D
-	// sprites[x + y * width]
-	Sprite *sprites;
-} Canvas;
-Canvas *getCanvas(Vector2Int size);
 
 void addCanvasToBuffer(Canvas *canvas);
 

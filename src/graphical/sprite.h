@@ -5,7 +5,7 @@
 
 typedef struct Sprite
 {
-	char icon;
+	int icon;
 	Color colorFore;
 	Color colorBack;
 } Sprite;

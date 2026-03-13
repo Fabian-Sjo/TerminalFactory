@@ -1,16 +1,19 @@
 #include "utils/systemIndependant.h"
 #include "utils/perlin.h"
-#include "graphical/renderer.h"
-#include "game/input.h"
-#include "world/world.h"
 #include "utils/map.h"
+
+#include "graphical/renderer.h"
+#include "graphical/canvas.h"
+
+#include "game/input.h"
+#include "game/gameLoop.h"
+
+#include "world/world.h"
 #include "world/chunk.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <signal.h>
-
-#include "game/gameLoop.h"
 
 Vector2Int screenSafezone = {8, 10};
 Vector2Int screenSize = {44, 22};
@@ -128,7 +131,21 @@ void start()
 	printf("\33[?25l"); // reset ansi
 
 	world = createWorld();
-	canvas = getCanvas(screenSize);
+	canvas = canvasNew(screenSize);
+	cavasDrawRectangle(canvas, (Vector2Int){2, 2}, (Vector2Int){5, 5}, (Sprite){'#'}, FILL_ALL);
+	cavasDrawRectangle(canvas, (Vector2Int){8, 2}, (Vector2Int){5, 5}, (Sprite){'+'}, FILL_NONE);
+	NineRect nineRect = {
+		{{(Sprite){'#'}, (Sprite){'v'}, (Sprite){'#'}},
+		 {(Sprite){'<'}, (Sprite){'.'}, (Sprite){'>'}},
+		 {(Sprite){'#'}, (Sprite){'^'}, (Sprite){'#'}}}};
+	canvasDrawNineRect(canvas, (Vector2Int){14, 2}, (Vector2Int){5, 5}, nineRect, FILL_ALL);
+	canvasDrawNineRect(canvas, (Vector2Int){20, 2}, (Vector2Int){10, 10}, nineRect, FILL_NONE);
+	//▶ ◀ ▲ ▼
+	NineRect nineRect2 = {
+		{{(Sprite){'#'}, (Sprite){'▼'}, (Sprite){'#'}},
+		 {(Sprite){'◀'}, (Sprite){'.'}, (Sprite){'▶'}},
+		 {(Sprite){'#'}, (Sprite){'▲'}, (Sprite){'#'}}}};
+	canvasDrawNineRect(canvas, (Vector2Int){32, 2}, (Vector2Int){10, 10}, nineRect2, FILL_NONE);
 	// areaAsSprites(world, (Vector2Int){1, 1}, (Vector2Int){3, 3});
 
 	// areaAsSprites(world, (Vector2Int){CHUNK_SIZE + 1, 1}, (Vector2Int){CHUNK_SIZE + 3, 3});

@@ -1,9 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
+
 #include "sprite.h"
 #include "color.h"
 #include "renderer.h"
-#include <stdlib.h>
+#include "canvas.h"
+
 
 char *buffer = NULL;
 int nrOfElements = 0;
@@ -23,14 +25,6 @@ void setColorFore(Color colorForeground);
 void setColorBack(Color colorBackground);
 void updateColor();
 void flush();
-
-Canvas *getCanvas(Vector2Int size)
-{
-	Canvas *newCanvas = malloc(sizeof(Canvas));
-	newCanvas->size = size;
-	newCanvas->sprites = malloc(sizeof(Sprite) * size.x * size.y);
-	return newCanvas;
-}
 
 void newLine()
 {
@@ -58,13 +52,15 @@ void addCharToBuffer(char c)
 
 void addCanvasToBuffer(Canvas *canvas)
 {
-	int nrOfElements = canvas->size.x * canvas->size.y;
-	for (size_t i = 0; i < nrOfElements; i++)
+	for (int y = 0; y < canvasGetSize(canvas).y; y++)
 	{
-		if (i % canvas->size.x == 0)
-			newLine();
-		addSpriteToBuffer(canvas->sprites[i]);
+		for (int x = 0; x < canvasGetSize(canvas).x; x++)
+		{
+			addSpriteToBuffer(canvasGetSprite(canvas, (Vector2Int){x, y}));
+		}
+		newLine();
 	}
+
 }
 void addSpriteToBuffer(Sprite sprite)
 {
