@@ -37,7 +37,14 @@ Vector2Int canvasGetSize(Canvas *canvas)
 
 void canvasSetSprite(Canvas *canvas, Vector2Int pos, Sprite sprite)
 {
-	canvas->sprites[pos.x + pos.y * canvas->size.x] = sprite;
+	Sprite spriteToSave = canvas->sprites[pos.x + pos.y * canvas->size.x];
+	if (!colorEquals(sprite.colorFore, COLOR_TRANSPARENT))
+		spriteToSave.colorFore = sprite.colorFore;
+	if (!colorEquals(sprite.colorBack, COLOR_TRANSPARENT))
+		spriteToSave.colorBack = sprite.colorBack;
+	spriteToSave.icon = sprite.icon;
+
+	canvas->sprites[pos.x + pos.y * canvas->size.x] = spriteToSave;
 }
 Sprite canvasGetSprite(Canvas *canvas, Vector2Int pos)
 {

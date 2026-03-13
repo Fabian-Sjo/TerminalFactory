@@ -19,7 +19,10 @@ struct World
 {
 	Map *chunks;
 };
+int nrOfChunks(World *world){
 
+	return mapGetSize(world->chunks);
+}
 Chunk *getChunk(World *world, unsigned int x, unsigned int y)
 {
 	unsigned long long key = x;
@@ -103,7 +106,7 @@ int divFloor(int a, int b)
 
 void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int size, Vector2Int canvasPos)
 {
-	Vector2Int posB = vectorAdd(posA, size);
+	Vector2Int posB = vecAddI(posA, size);
 	int width = posB.x - posA.x;
 	int height = posB.y - posA.y;
 	int required = width * height;

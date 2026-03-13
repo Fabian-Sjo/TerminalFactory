@@ -2,6 +2,8 @@
 #define MAP_H
 typedef struct Map Map;
 
+int mapGetSize(Map *map);
+
 Map *mapCreate(unsigned long size);
 
 int mapAdd(Map *map, unsigned long long key, void *value);

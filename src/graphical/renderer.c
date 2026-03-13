@@ -6,7 +6,6 @@
 #include "renderer.h"
 #include "canvas.h"
 
-
 char *buffer = NULL;
 int nrOfElements = 0;
 int bufferSize = 2;
@@ -50,7 +49,7 @@ void addCharToBuffer(char c)
 	*(buffer + (nrOfElements + 1)) = '\0'; // Add null terminator
 }
 
-void addCanvasToBuffer(Canvas *canvas)
+void writeCanvasToBuffer(Canvas *canvas)
 {
 	for (int y = 0; y < canvasGetSize(canvas).y; y++)
 	{
@@ -60,21 +59,14 @@ void addCanvasToBuffer(Canvas *canvas)
 		}
 		newLine();
 	}
-
 }
 void addSpriteToBuffer(Sprite sprite)
 {
-	if (
-		currentForeColor.R != (sprite.colorFore.R) ||
-		currentForeColor.G != (sprite.colorFore.G) ||
-		currentForeColor.B != (sprite.colorFore.B))
+	if (!colorEquals(sprite.colorFore, currentForeColor) && !colorEquals(sprite.colorFore, COLOR_TRANSPARENT))
 	{
 		setColorFore((sprite.colorFore));
 	}
-	if (
-		currentBackColor.R != (sprite.colorBack.R) ||
-		currentBackColor.G != (sprite.colorBack.G) ||
-		currentBackColor.B != (sprite.colorBack.B))
+	if (!colorEquals(sprite.colorBack, currentBackColor) && !colorEquals(sprite.colorBack, COLOR_TRANSPARENT))
 	{
 		setColorBack((sprite.colorBack));
 	}
@@ -122,8 +114,11 @@ void updateColor()
 }
 void flush()
 {
+
 	fflush(stdout);
 	printf(buffer);
+	printf("\033[0m"); // reset ansi
 	fflush(stdout);
 	nrOfElements = 0;
+	updateColor();
 }

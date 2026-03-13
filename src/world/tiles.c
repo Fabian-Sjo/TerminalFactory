@@ -36,7 +36,7 @@ struct Tile
 
 Tile testTile = {
 	.type = TILE_SINGLE_ENTITY,
-	.single = {.sprite = {'T', {0, 200, 0}, COLOR_BLACK}, .state = 0}};
+	.single = {.sprite = {'T', {0, 200, 0}, COLOR_BLACK_CONST}, .state = 0}};
 
 TileType getTileType(Tile *tile)
 {

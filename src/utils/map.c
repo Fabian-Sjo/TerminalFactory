@@ -9,7 +9,9 @@ struct Map {
     unsigned long long *key;
     void **value;
 };
-
+int mapGetSize(Map *map){
+	return map->number_of_elements;
+}
 Map *mapCreate(unsigned long size_of_values) {
     Map *map = calloc(1,sizeof(Map));
 

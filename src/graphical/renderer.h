@@ -7,7 +7,7 @@
 #include "..\utils\vector2.h"
 
 
-void addCanvasToBuffer(Canvas *canvas);
+void writeCanvasToBuffer(Canvas *canvas);
 
 void addStrToBuffer(char *str);
 void addCharToBuffer(char c);
