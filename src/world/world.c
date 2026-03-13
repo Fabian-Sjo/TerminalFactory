@@ -19,7 +19,8 @@ struct World
 {
 	Map *chunks;
 };
-int nrOfChunks(World *world){
+int nrOfChunks(World *world)
+{
 
 	return mapGetSize(world->chunks);
 }
@@ -176,8 +177,8 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 						canvasX >= canvasGetSize(canvas).x ||
 						canvasY >= canvasGetSize(canvas).y)
 						continue;
-					canvasSetSprite(canvas,(Vector2Int){canvasX,canvasY},sprite);
-					//canvas->sprites[canvasX + canvasY * canvas->size.x] = sprite;
+					canvasSetSprite(canvas, (Vector2Int){canvasX, canvasY}, sprite);
+					// canvas->sprites[canvasX + canvasY * canvas->size.x] = sprite;
 				}
 			}
 		}
@@ -202,12 +203,18 @@ Tile *getTile(World *world, int x, int y)
 	return getChunkTile(chunk, chunkLocalX, chunkLocalY);
 }
 
-void setTile(World *world, int x, int y, Tile *tile)
+void setTile(World *world, Vector2Int position, Tile *tile)
 {
-	int chunkX = x / CHUNK_SIZE;
-	int chunkY = y / CHUNK_SIZE;
-	int chunkLocalX = x - chunkX;
-	int chunkLocalY = y - chunkY;
+	int chunkLocalX = position.x & (CHUNK_SIZE - 1);
+	if (position.x < 0)
+	position.x -= CHUNK_SIZE - 1;
+	int chunkX = position.x / CHUNK_SIZE;
+
+	int chunkLocalY = position.y & (CHUNK_SIZE - 1);
+	if (position.y < 0)
+		position.y -= CHUNK_SIZE - 1;
+	int chunkY = position.y / CHUNK_SIZE;
+
 	setChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, tile);
 }
 GroundTile *getGroundTile(World *world, int x, int y)

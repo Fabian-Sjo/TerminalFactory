@@ -20,7 +20,7 @@ Tile *getTile(World *world, int x, int y);
 
 GroundTile *getGroundTile(World *world, int x, int y);
 
-void setTile(World *world, int x, int y, Tile tile);
+void setTile(World *world, Vector2Int position, Tile *tile);
 
 void setGroundTile(World *world, int x, int y, GroundTile tile);
 

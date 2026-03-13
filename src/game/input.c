@@ -9,7 +9,7 @@
 static struct termios old, new1;
 #endif
 
-int neededChecksWithoutInput = 2;
+int neededChecksWithoutInput = 0;
 
 /* Initialize new terminal i/o settings */
 
