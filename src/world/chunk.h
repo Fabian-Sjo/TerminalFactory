@@ -9,6 +9,7 @@
 
 typedef struct Chunk
 {
+	
 	Tile *tiles[CHUNK_SIZE][CHUNK_SIZE];
 	GroundTile *groundTiles[CHUNK_SIZE][CHUNK_SIZE];
 } Chunk;

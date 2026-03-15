@@ -14,16 +14,26 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#define MAX_CONVEYORS 256
 
 struct World
 {
 	Map *chunks;
+
+	int tilesMax;
+	int tilesCurrent;
+	void *Tiles;
 };
+
+void worldAddTile(World *world, Tile *tile)
+{
+	
+}
+
 int nrOfChunks(World *world)
 {
-
 	return mapGetSize(world->chunks);
-}
+};
 Chunk *getChunk(World *world, unsigned int x, unsigned int y)
 {
 	unsigned long long key = x;
@@ -44,6 +54,8 @@ World *createWorld()
 {
 	World *world = malloc(sizeof(World));
 	world->chunks = mapCreate(sizeof(Map *));
+	world->tilesMax = calloc();
+
 	return world;
 }
 int chunkIsGenerated(World *world, int chunkX, int chunkY)
@@ -62,7 +74,7 @@ void generateChunk(World *world, int globalX, int globalY)
 	if (chunkIsGenerated(world, chunkX, chunkY))
 		return;
 
-	Tile *tile = &testTile;
+	// Tile *tile = &testTile;
 	GroundTile *groundTiles[] = {
 		&GROUND_TILE_WATER,
 		&GROUND_TILE_GRASS_1,
@@ -161,7 +173,7 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 						Tile *tile = getChunkTile(chunk, localX, localY);
 						if (tile)
 						{
-							Sprite tileSprite = getTileSprite(tile);
+							Sprite tileSprite = tileGetSprite(tile);
 							sprite.icon = tileSprite.icon;
 							sprite.colorFore = tileSprite.colorFore;
 						}
@@ -207,14 +219,14 @@ void setTile(World *world, Vector2Int position, Tile *tile)
 {
 	int chunkLocalX = position.x & (CHUNK_SIZE - 1);
 	if (position.x < 0)
-	position.x -= CHUNK_SIZE - 1;
+		position.x -= CHUNK_SIZE - 1;
 	int chunkX = position.x / CHUNK_SIZE;
 
 	int chunkLocalY = position.y & (CHUNK_SIZE - 1);
 	if (position.y < 0)
 		position.y -= CHUNK_SIZE - 1;
 	int chunkY = position.y / CHUNK_SIZE;
-
+	tileInit(tile, position, NULL);
 	setChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, tile);
 }
 GroundTile *getGroundTile(World *world, int x, int y)

@@ -1,72 +1,63 @@
 #include "tiles.h"
 #include <stdlib.h>
 
-typedef struct
-{
-	
-	Sprite sprite;
-	int state;
-} SingleEntityData;
+#include "../gameData.h"
+// TODO can use item pooling
 
-typedef struct
+/// General tile definition
+struct TileDefinition
 {
-	int offsetX;
-	int offsetY;
-	Tile *originTile;
-} MultiPartData;
-
-typedef struct
-{
-	int sizeX;
-	int sizeY;
-	int state;
-	Sprite **sprites;
-} MultiOriginData;
+	Sprite (*getSprite)(int instanceID);
+	void (*tick)(int instanceID, GameData *gameData);
+	void (*init)(int instanceID, Vector2Int pos, GameData *gameData);
+	void (*destroy)(int instanceID, GameData *gameData);
+};
 
 struct Tile
 {
-	TileType type;
-	union
-	{
-		SingleEntityData single;
-		MultiPartData part;
-		MultiOriginData origin;
-	};
+	struct TileDefinition *defention;
+	int instanceID;
+};
+// example of specific tile
+
+void ConveyorTick(int instanceID, GameData *gameData)
+{
+	//instance->direction++;
+};
+Sprite ConveyorSprite(int instanceID)
+{
+	//if (instance->direction % 2)
+		return (Sprite){'7'};
+	return (Sprite){'-'};
+};
+void ConveyorInit(Tile *tile, Vector2Int pos, GameData *gameData)
+{
+	
+};
+void ConveyorDestroy(Tile *tile, GameData *gameData)
+{
+	
+};
+struct TileDefinition ConveyorDefinition = {
+	.getSprite = &ConveyorSprite,
+	.tick = &ConveyorTick,
+	.init = &ConveyorInit,
+	.destroy = &ConveyorDestroy};
+
+Tile TILE_CONVEYOR = {
+	.defention = &ConveyorDefinition,
+	.instanceID = -1};
+
+void tileInit(Tile *tile, Vector2Int pos, GameData *gameData)
+{
+	tile->defention->init(tile, pos, gameData);
+};
+void tileDestroy(Tile *tile, Vector2Int pos, GameData *gameData)
+{
+	tile->defention->destroy(tile, gameData);
 };
 
-Tile testTile = {
-	.type = TILE_SINGLE_ENTITY,
-	.single = {.sprite = {'T', {0, 200, 0}, COLOR_BLACK_CONST}, .state = 0}};
-
-TileType getTileType(Tile *tile)
+Sprite tileGetSprite(Tile *tile)
 {
-}
-Sprite getMulitTileSprite(Tile *originTile, int offsetX, int offsetY)
-{
-	Sprite **sprites = originTile->origin.sprites;
-	return (sprites[offsetX][offsetY]);
-}
-Sprite getTileSprite(Tile *tile)
-{
-	if(tile != NULL){
-		int a = 1;
-	}
-	switch (tile->type)
-	{
-	case TILE_SINGLE_ENTITY:
-		return tile->single.sprite;
-	case TILE_MULTI_PART:
-		return getMulitTileSprite(
-			tile->part.originTile,
-			tile->part.offsetX,
-			tile->part.offsetY);
-	case TILE_MULTI_CORE:
-		return getMulitTileSprite(tile, 0, 0);
-		break;
-
-	default:
-		Sprite sprite = {'X', {200, 200, 0}, COLOR_BLACK};
-		return sprite;
-		break;
-	}
-}
+	return tile->defention->getSprite(tile->instanceID);
+};

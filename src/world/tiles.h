@@ -2,30 +2,28 @@
 #define TILES_H
 
 #include "../graphical/sprite.h"
+#include "../utils/vector2.h"
 
-typedef enum
+typedef struct World World;
+typedef struct GameData GameData;
+typedef struct Tile
 {
-	TILE_MULTI_PART,
-	TILE_MULTI_CORE,
-	TILE_SINGLE_ENTITY
-} TileType;
+	struct TileDefinition *defention;
+	int instanceID;
+	Vector2Int pos;
+}Tile;
 
-/*
-has type
-	EMPTY(type)
-	has data
-		PART OF MULTI (parent, type(gets real type from parent))
-		has state
-			SINGLE (1 sprite, state, type)
-			MULTI CORE (n sprites, state, type)
-			*/
-		
-typedef struct Tile Tile;
 
-extern Tile testTile;
+Tile TILE_CONVEYOR;
+struct ConveyorInstance
+{
+	short direction;
+};
 
-TileType getTileType(Tile *tile);
-Sprite getTileSprite(Tile *tile);
-void getTileState();
+
+void tileInit(Tile *tile, Vector2Int pos, GameData *GameData);
+void tileDestroy(Tile *tile, Vector2Int pos, GameData *GameData);
+
+Sprite tileGetSprite(Tile *tile);
 
 #endif

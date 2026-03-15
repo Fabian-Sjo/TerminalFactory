@@ -12,6 +12,8 @@
 #include "world/world.h"
 #include "world/chunk.h"
 
+#include "gameData.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <signal.h>
@@ -22,18 +24,18 @@ int borderSize = 1;
 // World *world = NULL;
 // Canvas *canvas = NULL;
 
-typedef struct GameData
-{
-	KeyEvent keyevent;
-	Player *player;
-
-	int frame;
-
-	Vector2Int screenSize;
-
-	World *activeWorld;
-	Canvas *canvas;
-} GameData;
+//typedef struct GameData
+//{
+//	KeyEvent keyevent;
+//	Player *player;
+//
+//	int frame;
+//
+//	Vector2Int screenSize;
+//
+//	World *activeWorld;
+//	Canvas *canvas;
+//} GameData;
 GameData gameData;
 
 void render(GameData *gameData);
@@ -76,6 +78,7 @@ void loop(long deltaTime)
 
 	gameData.keyevent = getKeyEvent();
 	gameData.frame++;
+	gameData.tick++;
 	tickPlayer(&gameData);
 	// debugInfo(deltaTime, keyEvent);
 	generateChunk(gameData.activeWorld, gameData.player->position.x, gameData.player->position.y);
@@ -133,7 +136,7 @@ void tickPlayer(GameData *gameData)
 		gameData->player->position.x++;
 		break;
 	case KEY_SPACE:
-		setTile(gameData->activeWorld, gameData->player->position, &testTile);
+		setTile(gameData->activeWorld, gameData->player->position, &TILE_CONVEYOR);
 		break;
 	default:
 		break;
