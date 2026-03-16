@@ -15,8 +15,8 @@ typedef struct TileHandler
 	int count;
 } TileHandler;
 
-// returns the tile
-Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos);
+// returns the tile it created, so it can be added to the world
+Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, GameData *gameData);
 void destroyFunctionTile(TileHandler *handler, int instanceID);
 void tickFunctionTiles(TileHandler *handler, GameData *gameData);
 #endif

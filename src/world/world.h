@@ -9,12 +9,14 @@
 typedef struct World World;
 
 World *createWorld();
+void worldTick(GameData *gameData);
+
 int chunkIsGenerated(World *world, int x, int y);
 void generateChunk(World *world, int x, int y);
 
 int nrOfChunks(World *world);
 
-void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int size, Vector2Int canvasPos);
+void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int size, Vector2Int canvasPos, GameData *gameData);
 
 Tile *getTile(World *world, int x, int y);
 

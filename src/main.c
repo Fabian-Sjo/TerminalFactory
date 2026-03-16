@@ -24,7 +24,7 @@ int borderSize = 1;
 // World *world = NULL;
 // Canvas *canvas = NULL;
 
-//typedef struct GameData
+// typedef struct GameData
 //{
 //	KeyEvent keyevent;
 //	Player *player;
@@ -35,7 +35,7 @@ int borderSize = 1;
 //
 //	World *activeWorld;
 //	Canvas *canvas;
-//} GameData;
+// } GameData;
 GameData gameData;
 
 void render(GameData *gameData);
@@ -80,6 +80,8 @@ void loop(long deltaTime)
 	gameData.frame++;
 	gameData.tick++;
 	tickPlayer(&gameData);
+
+	worldTick(&gameData);
 	// debugInfo(deltaTime, keyEvent);
 	generateChunk(gameData.activeWorld, gameData.player->position.x, gameData.player->position.y);
 
@@ -103,12 +105,12 @@ void render(GameData *gameData)
 					  (Vector2Int){
 						  gameData->screenSize.x - borderSize * 2,
 						  gameData->screenSize.y - borderSize * 2},
-					  (Vector2Int){borderSize, borderSize});
+					  (Vector2Int){borderSize, borderSize}, gameData);
 
 	// cursor
 	if ((gameData->frame / 4) & 2)
 		canvasSetSprite(gameData->canvas,
-						vecAddI(vecDivI(gameData->screenSize, (Vector2Int){2, 2}),(Vector2Int){1,1}),
+						vecAddI(vecDivI(gameData->screenSize, (Vector2Int){2, 2}), (Vector2Int){1, 1}),
 						(Sprite){'_', COLOR_WHITE, COLOR_TRANSPARENT});
 
 	writeCanvasToBuffer(gameData->canvas);
