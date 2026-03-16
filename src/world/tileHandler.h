@@ -2,7 +2,7 @@
 #define TILEHANDLER_H
 #include "tiles.h"
 
-#define MAX_TILES 1024
+#define MAX_FUNCTION_TILES 1024
 
 struct TileInstance
 {
@@ -11,7 +11,7 @@ struct TileInstance
 };
 typedef struct TileHandler
 {
-	struct TileInstance instances[MAX_TILES];
+	struct TileInstance instances[MAX_FUNCTION_TILES];
 	int count;
 } TileHandler;
 

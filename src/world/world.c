@@ -63,7 +63,12 @@ World *createWorld()
 {
 	World *world = malloc(sizeof(World));
 	world->chunks = mapCreate(sizeof(Map *));
-	world->tileHandler.count = 0;
+	for (size_t i = 0; i < MAX_FUNCTION_TILES; i++)
+	{
+		world->tileHandler.instances[i].kind = TILE_NONE;
+		world->tileHandler.instances[i].data = NULL;
+	}
+	
 	return world;
 }
 int chunkIsGenerated(World *world, int chunkX, int chunkY)
@@ -240,6 +245,8 @@ void setTile(World *world, Vector2Int position, TileKind tileKind)
 	int chunkY = position.y / CHUNK_SIZE;
 	// TODO check if its allowed
 
+	destroyFunctionTile(&world->tileHandler, getChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY)->instanceID);
+	
 	Tile tile = createFunctionTile(&world->tileHandler, tileKind, position, NULL);
 
 	setChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, tile);

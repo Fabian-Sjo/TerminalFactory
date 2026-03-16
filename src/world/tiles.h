@@ -10,7 +10,9 @@ typedef struct GameData GameData;
 typedef enum
 {
 	TILE_NONE = 0,
+	TILE_ERROR,
 	TILE_BELT,
+	TILE_TREE,
 	TILE_COUNT
 } TileKind;
 typedef struct Tile
@@ -27,6 +29,8 @@ typedef struct TileDefinition
 	void (*init)(Tile tile, GameData *gameData);
 	void (*destroy)(int instanceID, GameData *gameData);
 	int sizeOfInstance;
+	char name[8];
+	char icon;
 } TileDefinition;
 
 extern const TileDefinition TILE_DEFS[TILE_COUNT];

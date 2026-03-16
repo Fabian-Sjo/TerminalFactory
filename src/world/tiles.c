@@ -9,31 +9,49 @@ typedef struct ConveyorInstance
 {
 	short direction;
 } ConveyorInstance;
-void ConveyorTick(int instanceID, GameData *gameData) {
+void conveyorTick(int instanceID, GameData *gameData)
+{
 	ConveyorInstance *instance = (ConveyorInstance *)worldTileFromInstanceID(gameData->activeWorld, instanceID);
 	instance->direction++;
 };
-Sprite ConveyorSprite(int instanceID, Vector2Int offset, GameData *gameData)
+Sprite conveyorSprite(int instanceID, Vector2Int offset, GameData *gameData)
 {
 	ConveyorInstance *instance = (ConveyorInstance *)worldTileFromInstanceID(gameData->activeWorld, instanceID);
 	if (instance->direction % 2)
 		return (Sprite){'7'};
 	return (Sprite){'-'};
 };
-void ConveyorInit(Tile tile, GameData *gameData) {
+void conveyorInit(Tile tile, GameData *gameData) {
 
 };
-void ConveyorDestroy(int instanceID, GameData *gameData) {
+void conveyorDestroy(int instanceID, GameData *gameData) {
 
+};
+
+Sprite errorSprite(int instanceID, Vector2Int offset, GameData *gameData)
+{
+	return (Sprite){'X', COLOR_RED, COLOR_BLACK};
 };
 
 const TileDefinition TILE_DEFS[TILE_COUNT] = {
+	[TILE_ERROR] = {
+		.getSprite = &errorSprite,
+		.tick = &conveyorTick,
+		.init = &conveyorInit,
+		.destroy = &conveyorDestroy,
+		.sizeOfInstance = sizeof(ConveyorInstance),
+		.name = {'E', 'R', 'R', 'O', 'R', '\0'},
+		.icon = '0',
+	},
 	[TILE_BELT] = {
-		.getSprite = &ConveyorSprite,
-		.tick = &ConveyorTick,
-		.init = &ConveyorInit,
-		.destroy = &ConveyorDestroy,
-		.sizeOfInstance = sizeof(ConveyorInstance)},
+		.getSprite = &conveyorSprite,
+		.tick = &conveyorTick,
+		.init = &conveyorInit,
+		.destroy = &conveyorDestroy,
+		.sizeOfInstance = sizeof(ConveyorInstance),
+		.name = {'B', 'E', 'L', 'T', '\0'},
+		.icon = '>',
+	},
 };
 TileDefinition *getTileDefinition(TileKind kind)
 {

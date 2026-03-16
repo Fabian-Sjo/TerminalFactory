@@ -38,12 +38,16 @@ int borderSize = 1;
 // } GameData;
 GameData gameData;
 
+TileKind selectedTile = TILE_TREE;
+
 void render(GameData *gameData);
 void tickPlayer(GameData *gameData);
 
 void debugInfo(long deltaTime, GameData *gameData)
 {
 
+	//printf("\033[2K"); // clear line
+	printf("selected item[%d][%c]: %s        \n", selectedTile, getTileDefinition(selectedTile)->icon, getTileDefinition(selectedTile)->name);
 	printf("screen width: %d height:%d\n", gameData->screenSize.x, gameData->screenSize.y);
 	printf("delta time: %10dms FPS: %3f\n nrOfChunks: %d\n", deltaTime, (1.0 / deltaTime * 1000), nrOfChunks(gameData->activeWorld));
 	printf("Frame: %d  ", gameData->frame++);
@@ -85,8 +89,8 @@ void loop(long deltaTime)
 	// debugInfo(deltaTime, keyEvent);
 	generateChunk(gameData.activeWorld, gameData.player->position.x, gameData.player->position.y);
 
-	render(&gameData);
 	debugInfo(deltaTime, &gameData);
+	render(&gameData);
 }
 void render(GameData *gameData)
 {
@@ -126,6 +130,16 @@ void tickPlayer(GameData *gameData)
 	case KEY_ESC:
 		stopGame();
 		break;
+	case KEY_Q:
+		selectedTile--;
+		if (selectedTile < 1)
+			selectedTile = TILE_COUNT - 1;
+		break;
+	case KEY_E:
+		selectedTile++;
+		if (selectedTile >= TILE_COUNT)
+			selectedTile = 1;
+		break;
 	case KEY_S:
 		gameData->player->position.y++;
 		break;
@@ -139,7 +153,7 @@ void tickPlayer(GameData *gameData)
 		gameData->player->position.x++;
 		break;
 	case KEY_SPACE:
-		setTile(gameData->activeWorld, gameData->player->position, TILE_BELT);
+		setTile(gameData->activeWorld, gameData->player->position, selectedTile);
 		break;
 	default:
 		break;
