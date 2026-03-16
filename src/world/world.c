@@ -37,7 +37,20 @@ void *worldTileFromInstanceID(World *world, int instanceID)
 {
 	return world->tileHandler.instances[instanceID].data;
 }
+Vector2Int worldTileOriginPosFromId(World *world, int instanceID)
+{
+	TileHandler *handler = &(world->tileHandler);
+	if (instanceID < 0 || instanceID >= handler->count)
+		return (Vector2Int){0, 0};
+	TileKind kind = handler->instances[instanceID].kind;
+	if (kind == TILE_NONE)
+		return (Vector2Int){0, 0};
+	TileDefinition *def = getTileDefinition(kind);
+	if (def == NULL)
+		return (Vector2Int){0, 0};
 
+	return handler->instances[instanceID].pos;
+}
 int nrOfChunks(World *world)
 {
 	return mapGetSize(world->chunks);
@@ -68,7 +81,7 @@ World *createWorld()
 		world->tileHandler.instances[i].kind = TILE_NONE;
 		world->tileHandler.instances[i].data = NULL;
 	}
-	
+
 	return world;
 }
 int chunkIsGenerated(World *world, int chunkX, int chunkY)
@@ -178,7 +191,7 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 					int globalX = chunkWorldX + localX;
 					int globalY = chunkWorldY + localY;
 
-					Sprite sprite = {'X', {200, 0, 0}, COLOR_BLACK};
+					Sprite sprite = {' ', COLOR_BLACK};
 
 					if (chunk)
 					{
@@ -188,8 +201,8 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 						Tile *tile = getChunkTile(chunk, localX, localY);
 						if (tile->kind != TILE_NONE)
 						{
-							TileDefinition *def = getTileDefinition(tile->kind);
-							Sprite tileSprite = def->getSprite(tile->instanceID, (Vector2Int){0, 0}, gameData);
+							Sprite tileSprite = getTileDefinition(tile->kind)->
+								getSprite(tile->instanceID, (Vector2Int){globalX, globalY}, gameData);
 							// Sprite tileSprite = tileGetSprite(tile);
 							sprite.icon = tileSprite.icon;
 							sprite.colorFore = tileSprite.colorFore;
@@ -232,24 +245,43 @@ Tile *getTile(World *world, int x, int y)
 	return getChunkTile(chunk, chunkLocalX, chunkLocalY);
 }
 
-void setTile(World *world, Vector2Int position, TileKind tileKind)
+void setTile(World *world, Vector2Int originPosition, TileKind tileKind)
 {
-	int chunkLocalX = position.x & (CHUNK_SIZE - 1);
-	if (position.x < 0)
-		position.x -= CHUNK_SIZE - 1;
-	int chunkX = position.x / CHUNK_SIZE;
 
-	int chunkLocalY = position.y & (CHUNK_SIZE - 1);
-	if (position.y < 0)
-		position.y -= CHUNK_SIZE - 1;
-	int chunkY = position.y / CHUNK_SIZE;
-	// TODO check if its allowed
+	Vector2Int tileSize = getTileSize(tileKind);
+	int originID = -1;
+	for (int x = 0; x < tileSize.x; x++)
+	{
+		for (int y = 0; y < tileSize.y; y++)
+		{
+			Vector2Int position = vecAddI(originPosition, (Vector2Int){x, y});
+			int chunkLocalX = position.x & (CHUNK_SIZE - 1);
+			if (position.x < 0)
+				position.x -= CHUNK_SIZE - 1;
+			int chunkX = position.x / CHUNK_SIZE;
 
-	destroyFunctionTile(&world->tileHandler, getChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY)->instanceID);
-	
-	Tile tile = createFunctionTile(&world->tileHandler, tileKind, position, NULL);
+			int chunkLocalY = position.y & (CHUNK_SIZE - 1);
+			if (position.y < 0)
+				position.y -= CHUNK_SIZE - 1;
+			int chunkY = position.y / CHUNK_SIZE;
 
-	setChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, tile);
+			// TODO check if its allowed
+
+			destroyFunctionTile(&world->tileHandler, getChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY)->instanceID);
+			Tile tile;
+			if (x == 0 && y == 0)
+			{
+				tile = createFunctionTile(&world->tileHandler, tileKind, originPosition, NULL);
+				originID = tile.instanceID;
+			}
+			else
+			{
+				tile = createMultiTile(&world->tileHandler, tileKind, (Vector2Int){x, y}, originID);
+			}
+
+			setChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, tile);
+		}
+	}
 }
 GroundTile *getGroundTile(World *world, int x, int y)
 {

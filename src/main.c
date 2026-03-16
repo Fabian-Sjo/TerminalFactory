@@ -38,7 +38,7 @@ int borderSize = 1;
 // } GameData;
 GameData gameData;
 
-TileKind selectedTile = TILE_TREE;
+TileKind selectedTile = TILE_BELT;
 
 void render(GameData *gameData);
 void tickPlayer(GameData *gameData);

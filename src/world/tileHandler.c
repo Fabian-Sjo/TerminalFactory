@@ -9,17 +9,21 @@ Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, Gam
 	Tile noTile = {
 		.kind = TILE_NONE,
 		.instanceID = -1,
-		.pos = pos};
+		.pos = pos,
+		.isDummy = 0,
+	};
 	if (kind == TILE_NONE)
 		return noTile;
 
-	if (def->init == NULL || def->tick == NULL || def->getSprite == NULL)
+	if (def->getSprite == NULL)
 	{
 		// TODO log error
 		Tile errorTile = {
 			.kind = TILE_ERROR,
 			.instanceID = -1,
-			.pos = pos};
+			.isDummy = 0,
+			.pos = pos,
+		};
 
 		return errorTile;
 	}
@@ -29,13 +33,25 @@ Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, Gam
 	{
 		nextOpenSlot++;
 	}
-	
+
 	int instanceID = nextOpenSlot;
 	handler->instances[instanceID].kind = kind;
+	handler->instances[instanceID].pos = pos;
 	handler->instances[instanceID].data = malloc(def->sizeOfInstance);
 	Tile tile = {.kind = kind, .instanceID = instanceID, .pos = pos};
-	def->init(tile, gameData);
+	if (def->init != NULL)
+		def->init(tile, gameData);
 	return tile;
+}
+Tile createMultiTile(TileHandler *handler, TileKind kind, Vector2Int pos, int originID)
+{
+	struct TileInstance originTile = handler->instances[originID];
+	Tile multiTile = {
+		.kind = kind,
+		.instanceID = originID,
+		.pos = pos,
+		.isDummy = 1};
+	return multiTile;
 }
 void destroyFunctionTile(TileHandler *handler, int instanceID)
 {
@@ -53,9 +69,10 @@ void tickFunctionTiles(TileHandler *handler, GameData *gameData)
 {
 	for (int i = 0; i < handler->count; i++)
 	{
-		if(handler->instances[i].kind == TILE_NONE)
+		if (handler->instances[i].kind == TILE_NONE)
 			continue;
 		struct TileDefinition *def = getTileDefinition(handler->instances[i].kind);
-		def->tick(i, gameData);
+		if (def->tick != NULL)
+			def->tick(i, gameData);
 	}
 }
