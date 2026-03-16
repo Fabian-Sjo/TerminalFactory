@@ -1,5 +1,6 @@
 #include "tileHandler.h"
 #include "tiles.h"
+#include <stdlib.h>
 
 Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, GameData *gameData)
 {
@@ -21,12 +22,14 @@ Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, Gam
 }
 void destroyFunctionTile(TileHandler *handler, int instanceID)
 {
+	//TODO this function needs to be made
+	//needs to free the memory of the tile and call the destroy function of the tile
 }
 void tickFunctionTiles(TileHandler *handler, GameData *gameData)
 {
 	for (int i = 0; i < handler->count; i++)
 	{
 		struct TileDefinition *def = getTileDefinition(handler->instances[i].kind);
-		def->tick(handler->instances[i].data, gameData);
+		def->tick(i, gameData);
 	}
 }

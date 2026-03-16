@@ -86,6 +86,7 @@ void loop(long deltaTime)
 	generateChunk(gameData.activeWorld, gameData.player->position.x, gameData.player->position.y);
 
 	render(&gameData);
+	debugInfo(deltaTime, &gameData);
 }
 void render(GameData *gameData)
 {
@@ -207,7 +208,7 @@ int main()
 
 	addFunctionStop(&stop);
 
-	setFps(30);
+	setFps(10);
 	startGame();
 
 	return 0;

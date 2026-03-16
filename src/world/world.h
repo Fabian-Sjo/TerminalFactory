@@ -10,7 +10,7 @@ typedef struct World World;
 
 World *createWorld();
 void worldTick(GameData *gameData);
-
+void *worldTileFromInstanceID(World *world, int instanceID);
 int chunkIsGenerated(World *world, int x, int y);
 void generateChunk(World *world, int x, int y);
 

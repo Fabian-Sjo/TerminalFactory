@@ -5,12 +5,18 @@
 // TODO can use item pooling
 
 // example of specific tile
+typedef struct ConveyorInstance
+{
+	short direction;
+} ConveyorInstance;
 void ConveyorTick(int instanceID, GameData *gameData) {
-	// instance->direction++;
+	ConveyorInstance *instance = (ConveyorInstance *)worldTileFromInstanceID(gameData->activeWorld, instanceID);
+	instance->direction++;
 };
 Sprite ConveyorSprite(int instanceID, Vector2Int offset, GameData *gameData)
 {
-	if (gameData->tick % 2)
+	ConveyorInstance *instance = (ConveyorInstance *)worldTileFromInstanceID(gameData->activeWorld, instanceID);
+	if (instance->direction % 2)
 		return (Sprite){'7'};
 	return (Sprite){'-'};
 };
@@ -20,10 +26,6 @@ void ConveyorInit(Tile tile, GameData *gameData) {
 void ConveyorDestroy(int instanceID, GameData *gameData) {
 
 };
-typedef struct ConveyorInstance
-{
-	short direction;
-} ConveyorInstance;
 
 const TileDefinition TILE_DEFS[TILE_COUNT] = {
 	[TILE_BELT] = {

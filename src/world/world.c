@@ -27,19 +27,22 @@ struct World
 	int tilesCurrent;
 	void *Tiles;
 };
-void worldTick(GameData *gameData){
-	
+void worldTick(GameData *gameData)
+{
+
 	TileHandler *handler = &(gameData->activeWorld->tileHandler);
 	tickFunctionTiles(handler, gameData);
 }
-void worldAddTile(World *world, Tile *tile)
+void *worldTileFromInstanceID(World *world, int instanceID)
 {
+	return world->tileHandler.instances[instanceID].data;
 }
 
 int nrOfChunks(World *world)
 {
 	return mapGetSize(world->chunks);
 };
+
 Chunk *getChunk(World *world, unsigned int x, unsigned int y)
 {
 	unsigned long long key = x;
