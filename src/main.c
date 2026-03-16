@@ -136,7 +136,7 @@ void tickPlayer(GameData *gameData)
 		gameData->player->position.x++;
 		break;
 	case KEY_SPACE:
-		setTile(gameData->activeWorld, gameData->player->position, &TILE_CONVEYOR);
+		setTile(gameData->activeWorld, gameData->player->position, TILE_BELT);
 		break;
 	default:
 		break;

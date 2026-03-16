@@ -3,6 +3,7 @@
 #include "chunk.h"
 #include "tiles.h"
 #include "world.h"
+#include "tileHandler.h"
 
 #include "../utils/perlin.h"
 #include "../utils/vector2.h"
@@ -19,7 +20,7 @@
 struct World
 {
 	Map *chunks;
-
+	TileHandler tileHandler;
 	int tilesMax;
 	int tilesCurrent;
 	void *Tiles;
@@ -54,8 +55,7 @@ World *createWorld()
 {
 	World *world = malloc(sizeof(World));
 	world->chunks = mapCreate(sizeof(Map *));
-	world->tilesMax = calloc();
-
+	world->tileHandler.count = 0;
 	return world;
 }
 int chunkIsGenerated(World *world, int chunkX, int chunkY)
@@ -86,7 +86,8 @@ void generateChunk(World *world, int globalX, int globalY)
 	{
 		for (int y = 0; y < CHUNK_SIZE; y++)
 		{
-			setChunkTile(chunk, x, y, NULL);
+			//TODO this no work
+			//setChunkTile(chunk, x, y, NULL);
 
 			float perlinValue = perlin_Get2d(
 				x + chunkX * CHUNK_SIZE + 10000000,
@@ -106,6 +107,7 @@ void generateChunk(World *world, int globalX, int globalY)
 	}
 	setChunk(world, chunkX, chunkY, chunk);
 }
+
 int divFloor(int a, int b)
 {
 	int q = a / b;
@@ -173,7 +175,9 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 						Tile *tile = getChunkTile(chunk, localX, localY);
 						if (tile)
 						{
-							Sprite tileSprite = tileGetSprite(tile);
+							TileDefinition *def = getTileDefinition(tile->kind);
+							Sprite tileSprite = def->getSprite(tile->instanceID);
+							// Sprite tileSprite = tileGetSprite(tile);
 							sprite.icon = tileSprite.icon;
 							sprite.colorFore = tileSprite.colorFore;
 						}
@@ -215,7 +219,7 @@ Tile *getTile(World *world, int x, int y)
 	return getChunkTile(chunk, chunkLocalX, chunkLocalY);
 }
 
-void setTile(World *world, Vector2Int position, Tile *tile)
+void setTile(World *world, Vector2Int position, TileKind tileKind)
 {
 	int chunkLocalX = position.x & (CHUNK_SIZE - 1);
 	if (position.x < 0)
@@ -226,7 +230,10 @@ void setTile(World *world, Vector2Int position, Tile *tile)
 	if (position.y < 0)
 		position.y -= CHUNK_SIZE - 1;
 	int chunkY = position.y / CHUNK_SIZE;
-	tileInit(tile, position, NULL);
+	//TODO check if its allowed
+
+	Tile tile = createFunctionTile(&world->tileHandler, tileKind, position);
+
 	setChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, tile);
 }
 GroundTile *getGroundTile(World *world, int x, int y)

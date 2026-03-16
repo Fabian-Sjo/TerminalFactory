@@ -6,24 +6,36 @@
 
 typedef struct World World;
 typedef struct GameData GameData;
+
+typedef enum {
+    TILE_NONE = 0,
+    TILE_BELT,
+    TILE_COUNT
+} TileKind;
+
+typedef struct TileDefinition
+{
+	Sprite (*getSprite)(int instanceID);
+	void (*tick)(int instanceID, GameData *gameData);
+	void (*init)(int instanceID, Vector2Int pos, GameData *gameData);
+	void (*destroy)(int instanceID, GameData *gameData);
+	int sizeOfInstance;
+}TileDefinition;
+
+extern const TileDefinition TILE_DEFS[TILE_COUNT];
+
+TileDefinition *getTileDefinition(TileKind kind);
+
 typedef struct Tile
 {
-	struct TileDefinition *defention;
+	TileKind kind;
 	int instanceID;
 	Vector2Int pos;
 }Tile;
 
 
-Tile TILE_CONVEYOR;
-struct ConveyorInstance
-{
-	short direction;
-};
 
 
-void tileInit(Tile *tile, Vector2Int pos, GameData *GameData);
-void tileDestroy(Tile *tile, Vector2Int pos, GameData *GameData);
 
-Sprite tileGetSprite(Tile *tile);
 
 #endif
