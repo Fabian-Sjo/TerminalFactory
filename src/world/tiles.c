@@ -36,7 +36,7 @@ Sprite errorSprite(int instanceID, Vector2Int pos, GameData *gameData)
 Sprite bigTileSprite(int instanceID, Vector2Int pos, GameData *gameData)
 {
 	char sprite[3][3] = {
-		{'X', '_', 'X'},
+		{'X', '=', 'X'},
 		{'|', 'O', '|'},
 		{'X', '=', 'X'},
 	};

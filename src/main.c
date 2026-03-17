@@ -115,7 +115,7 @@ void render(GameData *gameData)
 	Vector2Int cursorScreenPos = vecAddI(vecDivI(gameData->screenSize, (Vector2Int){2, 2}), (Vector2Int){1, 1});
 	if ((gameData->frame / 4) & 2)
 	{
-		canvasSetSprite(gameData->canvas, cursorScreenPos, (Sprite){'_', COLOR_WHITE, COLOR_TRANSPARENT});
+		canvasSetSprite(gameData->canvas, cursorScreenPos, (Sprite){'.', COLOR_WHITE, COLOR_TRANSPARENT});
 	}
 	else
 	{
