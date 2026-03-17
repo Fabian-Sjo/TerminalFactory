@@ -17,8 +17,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#define MAX_CONVEYORS 256
 
+#define true 1
+#define false 0
 struct World
 {
 	Map *chunks;
@@ -201,8 +202,7 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 						Tile *tile = getChunkTile(chunk, localX, localY);
 						if (tile->kind != TILE_NONE)
 						{
-							Sprite tileSprite = getTileDefinition(tile->kind)->
-								getSprite(tile->instanceID, (Vector2Int){globalX, globalY}, gameData);
+							Sprite tileSprite = getTileDefinition(tile->kind)->getSprite(tile->instanceID, (Vector2Int){globalX, globalY}, gameData);
 							// Sprite tileSprite = tileGetSprite(tile);
 							sprite.icon = tileSprite.icon;
 							sprite.colorFore = tileSprite.colorFore;
@@ -244,11 +244,39 @@ Tile *getTile(World *world, int x, int y)
 		return NULL;
 	return getChunkTile(chunk, chunkLocalX, chunkLocalY);
 }
-
-void setTile(World *world, Vector2Int originPosition, TileKind tileKind)
+int canPlaceTile(World *world, Vector2Int position, TileKind tileKind)
+{
+	TileDefinition *def = getTileDefinition(tileKind);
+	if (def == NULL)
+		return false;
+	Tile *tileAtPos = getTile(world, position.x, position.y);
+	if (tileAtPos == NULL || tileAtPos->kind != TILE_NONE)
+		return false;
+	return true;
+}
+int canPlaceMultiTile(World *world, Vector2Int originPosition, TileKind tileKind)
+{
+	Vector2Int tileSize = getTileSize(tileKind);
+	originPosition = vecSubI(originPosition, getTileOriginOffset(tileKind));
+	for (int x = 0; x < tileSize.x; x++)
+	{
+		for (int y = 0; y < tileSize.y; y++)
+		{
+			Vector2Int position = vecAddI(originPosition, (Vector2Int){x, y});
+			Tile *tileAtPos = getTile(world, position.x, position.y);
+			if (tileAtPos == NULL || tileAtPos->kind != TILE_NONE)
+				return false;
+		}
+	}
+	return true;
+}
+int placeTile(World *world, Vector2Int originPosition, TileKind tileKind)
 {
 
 	Vector2Int tileSize = getTileSize(tileKind);
+	if (canPlaceMultiTile(world, originPosition, tileKind) == false)
+		return -1;
+	originPosition = vecSubI(originPosition, getTileOriginOffset(tileKind));
 	int originID = -1;
 	for (int x = 0; x < tileSize.x; x++)
 	{
@@ -265,8 +293,6 @@ void setTile(World *world, Vector2Int originPosition, TileKind tileKind)
 				position.y -= CHUNK_SIZE - 1;
 			int chunkY = position.y / CHUNK_SIZE;
 
-			// TODO check if its allowed
-
 			destroyFunctionTile(&world->tileHandler, getChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY)->instanceID);
 			Tile tile;
 			if (x == 0 && y == 0)
@@ -280,6 +306,39 @@ void setTile(World *world, Vector2Int originPosition, TileKind tileKind)
 			}
 
 			setChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, tile);
+		}
+	}
+	return 0;
+}
+void removeTile(World *world, Vector2Int deletePosition)
+{
+
+	Tile *tile = getTile(world, deletePosition.x, deletePosition.y);
+	Vector2Int originPosition = worldTileOriginPosFromId(world, tile->instanceID);
+	if (tile == NULL || tile->kind == TILE_NONE)
+		return;
+	TileDefinition *def = getTileDefinition(tile->kind);
+	Vector2Int tileSize = def->size;
+	destroyFunctionTile(&world->tileHandler, tile->instanceID);
+	for (int x = 0; x < tileSize.x; x++)
+	{
+		for (int y = 0; y < tileSize.y; y++)
+		{
+			Vector2Int position = vecAddI(originPosition, (Vector2Int){x, y});
+			int chunkLocalX = position.x & (CHUNK_SIZE - 1);
+			if (position.x < 0)
+				position.x -= CHUNK_SIZE - 1;
+			int chunkX = position.x / CHUNK_SIZE;
+
+			int chunkLocalY = position.y & (CHUNK_SIZE - 1);
+			if (position.y < 0)
+				position.y -= CHUNK_SIZE - 1;
+			int chunkY = position.y / CHUNK_SIZE;
+			Tile noTile = {
+				.kind = TILE_NONE,
+				.instanceID = -1,
+			};
+			setChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, noTile);
 		}
 	}
 }

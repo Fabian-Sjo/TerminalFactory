@@ -10,7 +10,6 @@ Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, Gam
 		.kind = TILE_NONE,
 		.instanceID = -1,
 		.pos = pos,
-		.isDummy = 0,
 	};
 	if (kind == TILE_NONE)
 		return noTile;
@@ -21,7 +20,6 @@ Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, Gam
 		Tile errorTile = {
 			.kind = TILE_ERROR,
 			.instanceID = -1,
-			.isDummy = 0,
 			.pos = pos,
 		};
 
@@ -50,7 +48,7 @@ Tile createMultiTile(TileHandler *handler, TileKind kind, Vector2Int pos, int or
 		.kind = kind,
 		.instanceID = originID,
 		.pos = pos,
-		.isDummy = 1};
+	};
 	return multiTile;
 }
 void destroyFunctionTile(TileHandler *handler, int instanceID)

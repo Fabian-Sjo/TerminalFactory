@@ -10,7 +10,6 @@
 #include "game/gameLoop.h"
 
 #include "world/world.h"
-#include "world/chunk.h"
 
 #include "gameData.h"
 
@@ -46,7 +45,7 @@ void tickPlayer(GameData *gameData);
 void debugInfo(long deltaTime, GameData *gameData)
 {
 
-	//printf("\033[2K"); // clear line
+	// printf("\033[2K"); // clear line
 	printf("selected item[%d][%c]: %s        \n", selectedTile, getTileDefinition(selectedTile)->icon, getTileDefinition(selectedTile)->name);
 	printf("screen width: %d height:%d\n", gameData->screenSize.x, gameData->screenSize.y);
 	printf("delta time: %10dms FPS: %3f\n nrOfChunks: %d\n", deltaTime, (1.0 / deltaTime * 1000), nrOfChunks(gameData->activeWorld));
@@ -113,10 +112,38 @@ void render(GameData *gameData)
 					  (Vector2Int){borderSize, borderSize}, gameData);
 
 	// cursor
+	Vector2Int cursorScreenPos = vecAddI(vecDivI(gameData->screenSize, (Vector2Int){2, 2}), (Vector2Int){1, 1});
 	if ((gameData->frame / 4) & 2)
-		canvasSetSprite(gameData->canvas,
-						vecAddI(vecDivI(gameData->screenSize, (Vector2Int){2, 2}), (Vector2Int){1, 1}),
-						(Sprite){'_', COLOR_WHITE, COLOR_TRANSPARENT});
+	{
+		canvasSetSprite(gameData->canvas, cursorScreenPos, (Sprite){'_', COLOR_WHITE, COLOR_TRANSPARENT});
+	}
+	else
+	{
+		Vector2Int previewSize = getTileSize(selectedTile);
+		Vector2Int previewOriginOffset = getTileOriginOffset(selectedTile);
+		for (int x = 0; x < previewSize.x; x++)
+		{
+			for (int y = 0; y < previewSize.y; y++)
+			{
+				Vector2Int previewPos = vecAddI(cursorScreenPos, (Vector2Int){x, y});
+				previewPos = vecSubI(previewPos, previewOriginOffset);
+				if (previewPos.x < gameData->screenSize.x && previewPos.y < gameData->screenSize.y)
+				{
+					Sprite sprite = getTileDefinition(selectedTile)->getSprite(-1, (Vector2Int){x, y}, gameData);
+					if (!canPlaceTile(gameData->activeWorld, vecAddI(gameData->player->position, vecSubI((Vector2Int){x, y}, previewOriginOffset)), selectedTile))
+					{
+						sprite.colorFore = (Color){100, 0, 0};
+					}
+					else
+					{
+						sprite.colorFore = (Color){0, 30, 0};
+					}
+					sprite.colorBack = COLOR_TRANSPARENT;
+					canvasSetSprite(gameData->canvas, previewPos, sprite);
+				}
+			}
+		}
+	}
 
 	writeCanvasToBuffer(gameData->canvas);
 	printf("\033[H"); // scroll back terminal
@@ -132,13 +159,13 @@ void tickPlayer(GameData *gameData)
 		break;
 	case KEY_Q:
 		selectedTile--;
-		if (selectedTile < 1)
+		if (selectedTile < 0)
 			selectedTile = TILE_COUNT - 1;
 		break;
 	case KEY_E:
 		selectedTile++;
 		if (selectedTile >= TILE_COUNT)
-			selectedTile = 1;
+			selectedTile = 0;
 		break;
 	case KEY_S:
 		gameData->player->position.y++;
@@ -152,8 +179,11 @@ void tickPlayer(GameData *gameData)
 	case KEY_D:
 		gameData->player->position.x++;
 		break;
+	case KEY_F:
+		removeTile(gameData->activeWorld, gameData->player->position);
+		break;
 	case KEY_SPACE:
-		setTile(gameData->activeWorld, gameData->player->position, selectedTile);
+		placeTile(gameData->activeWorld, gameData->player->position, selectedTile);
 		break;
 	default:
 		break;
@@ -210,7 +240,7 @@ int main()
 {
 
 	// has to be power of 2
-	assert(CHUNK_SIZE && !(CHUNK_SIZE & (CHUNK_SIZE - 1)));
+	// assert(CHUNK_SIZE && !(CHUNK_SIZE & (CHUNK_SIZE - 1)));
 
 	signal(SIGINT, stopGame);
 

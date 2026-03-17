@@ -18,10 +18,7 @@ typedef enum
 typedef struct Tile
 {
 	TileKind kind;
-	int isDummy;
 	int instanceID;
-	//TODO this is fugly, need to figure out a way to go from dummy to origin and know the offset maybe save it in the functional tiles array?
-	//if is dummy then this is a relative pos to the origin tile, else its the global pos
 	Vector2Int pos;
 } Tile;
 
@@ -41,6 +38,6 @@ extern const TileDefinition TILE_DEFS[TILE_COUNT];
 
 TileDefinition *getTileDefinition(TileKind kind);
 Vector2Int getTileSize(TileKind kind);
-
+Vector2Int getTileOriginOffset(TileKind kind);
 
 #endif
