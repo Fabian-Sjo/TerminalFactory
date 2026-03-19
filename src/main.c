@@ -252,7 +252,7 @@ int main()
 
 	addFunctionStop(&stop);
 
-	setFps(10);
+	setFps(20);
 	startGame();
 
 	return 0;

@@ -18,8 +18,8 @@ Sprite conveyorSprite(int instanceID, Vector2Int pos, GameData *gameData)
 {
 	ConveyorInstance *instance = (ConveyorInstance *)worldTileFromInstanceID(gameData->activeWorld, instanceID);
 	Vector2Int offset = vecSubI(pos, worldTileOriginPosFromId(gameData->activeWorld, instanceID));
-	// if (instance->direction % 2)
-	//	return (Sprite){'7'};
+	if (gameData->tick % 2 == (pos.x + pos.y) % 2)
+		return (Sprite){'X'};
 	return (Sprite){'-' + offset.x};
 };
 void conveyorInit(Tile tile, GameData *gameData) {
@@ -33,13 +33,25 @@ Sprite errorSprite(int instanceID, Vector2Int pos, GameData *gameData)
 {
 	return (Sprite){'X', COLOR_RED, COLOR_BLACK};
 };
+typedef struct BigTileInstance
+{
+	char data;
+} BigTileInstance;
+void bigTileTick(int instanceID, GameData *gameData)
+{
+	BigTileInstance *instance = (BigTileInstance *)worldTileFromInstanceID(gameData->activeWorld, instanceID);
+	instance->data++;
+};
 Sprite bigTileSprite(int instanceID, Vector2Int pos, GameData *gameData)
 {
+	BigTileInstance *instance = (BigTileInstance *)worldTileFromInstanceID(gameData->activeWorld, instanceID);
+	
 	char sprite[3][3] = {
 		{'X', '=', 'X'},
 		{'|', 'O', '|'},
 		{'X', '=', 'X'},
 	};
+	
 	Vector2Int offset = vecSubI(pos, worldTileOriginPosFromId(gameData->activeWorld, instanceID));
 	return (Sprite){sprite[offset.y][offset.x], COLOR_WHITE, COLOR_BLACK}; // Edges
 };
@@ -55,16 +67,6 @@ const TileDefinition TILE_DEFS[TILE_COUNT] = {
 		.name = {'E', 'R', 'R', 'O', 'R', '\0'},
 		.icon = '0',
 	},
-	[TILE_BIG] = {
-		.getSprite = &bigTileSprite,
-		.tick = NULL,
-		.init = NULL,
-		.destroy = NULL,
-		.size = {3, 3},
-		.sizeOfInstance = sizeof(ConveyorInstance),
-		.name = {'B', 'I', 'G', '\0'},
-		.icon = 'B',
-	},
 	[TILE_BELT] = {
 		.getSprite = &conveyorSprite,
 		.tick = &conveyorTick,
@@ -74,6 +76,16 @@ const TileDefinition TILE_DEFS[TILE_COUNT] = {
 		.sizeOfInstance = sizeof(ConveyorInstance),
 		.name = {'B', 'E', 'L', 'T', '\0'},
 		.icon = '>',
+	},
+	[TILE_BIG] = {
+		.getSprite = &bigTileSprite,
+		.tick = &bigTileTick,
+		.init = NULL,
+		.destroy = NULL,
+		.size = {3, 3},
+		.sizeOfInstance = sizeof(BigTileInstance),
+		.name = {'B', 'I', 'G', '\0'},
+		.icon = 'B',
 	},
 };
 TileDefinition *getTileDefinition(TileKind kind)

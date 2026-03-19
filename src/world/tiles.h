@@ -22,6 +22,20 @@ typedef struct Tile
 	Vector2Int pos;
 } Tile;
 
+typedef enum
+{
+	ITEM_TEST = 0,
+} ItemKind;
+
+struct TileAttributeInput
+{
+	ItemKind itemSlot;
+	int (*filter)(ItemKind itemID);
+};
+struct TileAttributeOutput
+{
+	ItemKind itemSlot;
+};
 typedef struct TileDefinition
 {
 	Sprite (*getSprite)(int instanceID, Vector2Int pos, GameData *gameData);
@@ -32,6 +46,8 @@ typedef struct TileDefinition
 	int sizeOfInstance;
 	char name[8];
 	char icon;
+	struct TileAttributeInput attributeInput;
+	struct TileAttributeOutput attributeOutput;
 } TileDefinition;
 
 extern const TileDefinition TILE_DEFS[TILE_COUNT];
