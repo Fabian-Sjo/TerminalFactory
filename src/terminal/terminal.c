@@ -1,101 +1,147 @@
 #include "terminal.h"
-
+#include <stdio.h>
 #include <windows.h>
+#pragma comment(lib, "User32.lib") // compile with User32.lib
 
 HANDLE stdOutHandle;
 HANDLE stdInHandle;
 CONSOLE_CURSOR_INFO consoleCursorInfo;
+typedef struct KeyQueue
+{
+	int maxNrOfKeys;
+	Key keys[N_KEY_ROLLOVER];
+	int nrOfKeys;
 
+} KeyQueue;
 
-Key heldKeys[N_KEY_ROLLOVER];
-int nrOfHeldKeys = 0;
+KeyQueue pressedKeys = {.maxNrOfKeys = N_KEY_ROLLOVER, .nrOfKeys = 0};
+KeyQueue heldKeys = {.maxNrOfKeys = N_KEY_ROLLOVER, .nrOfKeys = 0};
+KeyQueue releasedKeys = {.maxNrOfKeys = N_KEY_ROLLOVER, .nrOfKeys = 0};
+int queueContains(KeyQueue *queue, Key key)
+{
+	if (!queue->nrOfKeys)
+		return FALSE;
+	for (int i = 0; i <= queue->nrOfKeys; i++)
+	{
+		if (queue->keys[i] == key)
+			return TRUE;
+	}
+	return FALSE;
+}
+void queueAdd(KeyQueue *queue, Key key)
+{
+	if (queueContains(queue, key))
+		return;
+	if (queue->nrOfKeys >= queue->maxNrOfKeys)
+		return;
+	queue->keys[queue->nrOfKeys++] = key;
+}
+void queueClear(KeyQueue *queue)
+{
+	queue->nrOfKeys = 0;
+}
+void queueRemove(KeyQueue *queue, Key key)
+{
+	int isFound = FALSE;
+	for (int i = 0; i < queue->nrOfKeys; i++)
+	{
+		if (queue->keys[i] == key)
+			isFound = TRUE;
+		if (isFound)
+		{
+			queue->keys[i] = queue->keys[i + 1];
+		}
+	}
+	if (isFound)
+		queue->nrOfKeys--;
+}
+void queueAppendToQueue(KeyQueue *source, KeyQueue *destination)
+{
+	if (source->nrOfKeys == 0)
+		return;
+	for (int i = 0; i < source->nrOfKeys; i++)
+	{
+		queueAdd(destination, source->keys[i]);
+	}
+}
 
 void terminalInit()
 {
 
-	HANDLE stdOutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-	HANDLE stdInHandle = GetStdHandle(STD_INPUT_HANDLE);
+	stdOutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+	stdInHandle = GetStdHandle(STD_INPUT_HANDLE);
 	GetConsoleCursorInfo(stdOutHandle, &consoleCursorInfo);
+	DWORD mode;
+	GetConsoleMode(stdInHandle, &mode);
 
-	int consoleSettings = ENABLE_EXTENDED_FLAGS;
-	if (!SetConsoleMode(stdInHandle, consoleSettings))
+	mode =
+		ENABLE_EXTENDED_FLAGS |
+		ENABLE_WINDOW_INPUT |
+		ENABLE_MOUSE_INPUT |
+		ENABLE_PROCESSED_INPUT;
+	if (!SetConsoleMode(stdInHandle, mode))
 		exit(-1);
-	consoleSettings = ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT;
-	if (!SetConsoleMode(stdInHandle, consoleSettings))
-		exit(-2);
 }
 void terminalReset()
 {
 }
-Key virtualKeyCodeToKey(WORD keyCode)
+void poolInput()
 {
-	switch (keyCode)
-	{
-	default:
-		return KEY_A;
-	}
-}
-InputEvent poolInput()
-{
-	INPUT_RECORD InputRecord;
-	DWORD Events;
-	int nrOfEvents;
-	InputEvent inputEvent = {0};
-	GetNumberOfConsoleInputEvents(stdInHandle, &nrOfEvents);
 
-	if (nrOfEvents == 0)
-		return;
+	queueClear(&releasedKeys);
+	queueAppendToQueue(&pressedKeys, &heldKeys);
+	queueClear(&pressedKeys);
 
-	ReadConsoleInput(stdInHandle, &InputRecord, 1, &Events);
+	DWORD numEvents = 0;
+	GetNumberOfConsoleInputEvents(stdInHandle, &numEvents);
+	KEY_EVENT_RECORD eventRecords[4];
+	int nrOfRecords = 0;
 
-	switch (InputRecord.EventType)
+
+
+	while (numEvents > 0)
 	{
-	case KEY_EVENT:
-	{
-		KEY_EVENT_RECORD eventRecord = InputRecord.Event.KeyEvent;
-		static KeyEvent keyEvent;
-		keyEvent.pressed = KEY_NONE;
-		keyEvent.released = KEY_NONE;
-		if (eventRecord.wVirtualKeyCode)
+		INPUT_RECORD record;
+		DWORD eventsRead;
+
+		ReadConsoleInput(stdInHandle, &record, 1, &eventsRead);
+
+		if (record.EventType == KEY_EVENT)
 		{
-			Key key = virtualKeyCodeToKey(eventRecord.wVirtualKeyCode);
-			if (eventRecord.bKeyDown)
+			KEY_EVENT_RECORD event = record.Event.KeyEvent;
+			eventRecords[nrOfRecords++] = event;
+			Key key = virtualKeyCodeToKey(event.wVirtualKeyCode);
+			if (event.bKeyDown)
 			{
-				keyEvent.pressed = key;
-				heldKeys[nrOfHeldKeys++] = key;
+				if (!queueContains(&heldKeys, key))
+				{
+
+					queueAdd(&pressedKeys, key);
+					queueAdd(&heldKeys, key);
+				}
 			}
 			else
 			{
-				keyEvent.released = key;
-				int isFound = FALSE;
-				for (int i = 0; i < nrOfHeldKeys; i++)
-				{
-					if (heldKeys[i] == key)
-						isFound = TRUE;
-					if (isFound)
-					{
-						if (i == nrOfHeldKeys)
-							heldKeys[i] = KEY_NONE;
-						else
-							heldKeys[i] = heldKeys[i + 1];
-					}
-				}
+				queueRemove(&heldKeys, key);
+				queueAdd(&releasedKeys, key);
 			}
 		}
-		for (int i = 0; i < nrOfHeldKeys; i++)
-			keyEvent.held[i] = heldKeys[i];
-		inputEvent.keyEvent = keyEvent;
-		break;
+
+		numEvents--;
 	}
-	case MOUSE_EVENT: // mouse input
-		break;
-	case WINDOW_BUFFER_SIZE_EVENT: // scrn buf. resizing
-	case FOCUS_EVENT:			   // disregard focus events
-	case MENU_EVENT:			   // disregard menu events
-		break;
-	default:
-		break;
-	}
+}
+int terminalIsKeyPressed(Key key)
+{
+	return queueContains(&pressedKeys, key);
+}
+int terminalIsKeyHeld(Key key)
+{
+	return queueContains(&heldKeys, key);
+}
+int terminalIsKeyReleased(Key key)
+{
+	printf("releasedNr:%d", releasedKeys.nrOfKeys);
+	return queueContains(&releasedKeys, key);
 }
 
 void terminalDraw()
@@ -106,13 +152,10 @@ void terminalDraw()
 void terminalSetTextColor255(Color color);
 void terminalSetTextColor16(Color16 color);
 
-int terminalIsKeyPressed(Key key)
-{
-}
 Vector2Int terminalGetMousePos()
 {
 	LPPOINT posPoint;
-	//GetCursorPos(posPoint);
+	// GetCursorPos(posPoint);
 	return (Vector2Int){posPoint->x, posPoint->y};
 }
 

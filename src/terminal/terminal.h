@@ -6,8 +6,6 @@
 typedef enum Key
 {
 	KEY_NONE,
-	KEY_INVALID,
-	KEY_ESC,
 	KEY_A,
 	KEY_B,
 	KEY_C,
@@ -34,39 +32,16 @@ typedef enum Key
 	KEY_X,
 	KEY_Y,
 	KEY_Z,
+	KEY_ESC,
 	KEY_LEFT_ARROW,
 	KEY_RIGHT_ARROW,
 	KEY_UP_ARROW,
 	KEY_DOWN_ARROW,
 	KEY_SPACE,
+	KEY_AMMOUNT
 } Key;
 
-typedef struct KeyEvent
-{
-	Key pressed;
-	Key released;
-} KeyEvent;
 
-typedef struct MouseEvent
-{
-	Vector2Int mousePos;
-} MouseEvent;
-
-enum InputType
-{
-	INPUT_KEY,
-	INPUT_MOUSE,
-};
-
-typedef struct InputEvent
-{
-	enum InputType type;
-	union
-	{
-		KeyEvent keyEvent;
-		MouseEvent mouseEvent;
-	};
-} InputEvent;
 
 typedef enum Color16
 {
@@ -91,12 +66,14 @@ typedef enum Color16
 void terminalInit();
 void terminalReset();
 
-InputEvent poolInput();
+void poolInput();
 
 void terminalSetTextColor255(Color color);
 void terminalSetTextColor16(Color16 color);
 
 int terminalIsKeyPressed(Key key);
+int terminalIsKeyHeld(Key key);
+int terminalIsKeyReleased(Key key);
 Vector2Int terminalGetMousePos();
 
 void terminalSetCursorPos(Vector2Int pos);
