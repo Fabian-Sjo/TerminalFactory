@@ -1,73 +1,23 @@
 #include "terminal.h"
 #include <stdio.h>
 #include <windows.h>
+
 #pragma comment(lib, "User32.lib") // compile with User32.lib
 
 HANDLE stdOutHandle;
 HANDLE stdInHandle;
 CONSOLE_CURSOR_INFO consoleCursorInfo;
-typedef struct KeyQueue
-{
-	int maxNrOfKeys;
-	Key keys[N_KEY_ROLLOVER];
-	int nrOfKeys;
 
-} KeyQueue;
+Vector2Int mousePos;
 
-KeyQueue pressedKeys = {.maxNrOfKeys = N_KEY_ROLLOVER, .nrOfKeys = 0};
-KeyQueue heldKeys = {.maxNrOfKeys = N_KEY_ROLLOVER, .nrOfKeys = 0};
-KeyQueue releasedKeys = {.maxNrOfKeys = N_KEY_ROLLOVER, .nrOfKeys = 0};
-int queueContains(KeyQueue *queue, Key key)
-{
-	if (!queue->nrOfKeys)
-		return FALSE;
-	for (int i = 0; i <= queue->nrOfKeys; i++)
-	{
-		if (queue->keys[i] == key)
-			return TRUE;
-	}
-	return FALSE;
-}
-void queueAdd(KeyQueue *queue, Key key)
-{
-	if (queueContains(queue, key))
-		return;
-	if (queue->nrOfKeys >= queue->maxNrOfKeys)
-		return;
-	queue->keys[queue->nrOfKeys++] = key;
-}
-void queueClear(KeyQueue *queue)
-{
-	queue->nrOfKeys = 0;
-}
-void queueRemove(KeyQueue *queue, Key key)
-{
-	int isFound = FALSE;
-	for (int i = 0; i < queue->nrOfKeys; i++)
-	{
-		if (queue->keys[i] == key)
-			isFound = TRUE;
-		if (isFound)
-		{
-			queue->keys[i] = queue->keys[i + 1];
-		}
-	}
-	if (isFound)
-		queue->nrOfKeys--;
-}
-void queueAppendToQueue(KeyQueue *source, KeyQueue *destination)
-{
-	if (source->nrOfKeys == 0)
-		return;
-	for (int i = 0; i < source->nrOfKeys; i++)
-	{
-		queueAdd(destination, source->keys[i]);
-	}
-}
+KeyState keys[KEY_AMMOUNT];
+
+Color currentForeColor = {0, 0, 0};
+Color currentBackColor = {0, 0, 0};
 
 void terminalInit()
 {
-
+	SetConsoleOutputCP(CP_UTF8);
 	stdOutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 	stdInHandle = GetStdHandle(STD_INPUT_HANDLE);
 	GetConsoleCursorInfo(stdOutHandle, &consoleCursorInfo);
@@ -85,80 +35,159 @@ void terminalInit()
 void terminalReset()
 {
 }
+int keyToCode(Key key)
+{
+
+	switch (key)
+	{
+	case KEY_A:
+		return 'A';
+	case KEY_B:
+		return 'B';
+	case KEY_C:
+		return 'C';
+	case KEY_D:
+		return 'D';
+	case KEY_E:
+		return 'E';
+	case KEY_F:
+		return 'F';
+	case KEY_G:
+		return 'G';
+	case KEY_H:
+		return 'H';
+	case KEY_I:
+		return 'I';
+	case KEY_J:
+		return 'J';
+	case KEY_K:
+		return 'K';
+	case KEY_L:
+		return 'L';
+	case KEY_M:
+		return 'M';
+	case KEY_N:
+		return 'N';
+	case KEY_O:
+		return 'O';
+	case KEY_P:
+		return 'P';
+	case KEY_Q:
+		return 'Q';
+	case KEY_R:
+		return 'R';
+	case KEY_S:
+		return 'S';
+	case KEY_T:
+		return 'T';
+	case KEY_U:
+		return 'U';
+	case KEY_V:
+		return 'V';
+	case KEY_W:
+		return 'W';
+	case KEY_X:
+		return 'X';
+	case KEY_Y:
+		return 'Y';
+	case KEY_Z:
+		return 'Z';
+	case KEY_SPACE:
+		return VK_SPACE;
+	case KEY_ESC:
+		return VK_ESCAPE;
+	default:
+		return 0;
+	}
+}
 void poolInput()
 {
 
-	queueClear(&releasedKeys);
-	queueAppendToQueue(&pressedKeys, &heldKeys);
-	queueClear(&pressedKeys);
-
-	DWORD numEvents = 0;
-	GetNumberOfConsoleInputEvents(stdInHandle, &numEvents);
-	KEY_EVENT_RECORD eventRecords[4];
-	int nrOfRecords = 0;
-
-
-
-	while (numEvents > 0)
+	for (int buttonIndex = 0; buttonIndex < KEY_AMMOUNT; buttonIndex++)
 	{
-		INPUT_RECORD record;
-		DWORD eventsRead;
-
-		ReadConsoleInput(stdInHandle, &record, 1, &eventsRead);
-
-		if (record.EventType == KEY_EVENT)
-		{
-			KEY_EVENT_RECORD event = record.Event.KeyEvent;
-			eventRecords[nrOfRecords++] = event;
-			Key key = virtualKeyCodeToKey(event.wVirtualKeyCode);
-			if (event.bKeyDown)
-			{
-				if (!queueContains(&heldKeys, key))
-				{
-
-					queueAdd(&pressedKeys, key);
-					queueAdd(&heldKeys, key);
-				}
-			}
+		int keyCode = keyToCode(buttonIndex);
+		KeyState newState = (GetKeyState(keyCode) & 0b10000000) ? KEY_PRESSED : KEY_RELEASED;
+		KeyState oldState = keys[buttonIndex];
+		KeyState state;
+		if (newState == KEY_PRESSED)
+			if (oldState != KEY_PRESSED && oldState != KEY_JUST_PRESSED)
+				state = KEY_JUST_PRESSED;
 			else
-			{
-				queueRemove(&heldKeys, key);
-				queueAdd(&releasedKeys, key);
-			}
-		}
+				state = KEY_PRESSED;
+		else if (oldState != KEY_RELEASED && oldState != KEY_JUST_RELEASED)
+			state = KEY_JUST_RELEASED;
+		else
+			state = KEY_RELEASED;
+		keys[buttonIndex] = state;
+	}
+	INPUT_RECORD rec;
+	DWORD read;
+	int nrOfEvents;
+	GetNumberOfConsoleInputEvents(stdInHandle, &nrOfEvents);
 
-		numEvents--;
+	if (nrOfEvents == 0)
+		return;
+	ReadConsoleInput(stdInHandle, &rec, 1, &read);
+	if (rec.EventType == MOUSE_EVENT)
+	{
+		mousePos = (Vector2Int){rec.Event.MouseEvent.dwMousePosition.X,
+								rec.Event.MouseEvent.dwMousePosition.Y};
 	}
 }
-int terminalIsKeyPressed(Key key)
+KeyState terminalGetKeyState(Key key)
 {
-	return queueContains(&pressedKeys, key);
+	return keys[key];
 }
-int terminalIsKeyHeld(Key key)
-{
-	return queueContains(&heldKeys, key);
-}
-int terminalIsKeyReleased(Key key)
-{
-	printf("releasedNr:%d", releasedKeys.nrOfKeys);
-	return queueContains(&releasedKeys, key);
-}
-
 void terminalDraw()
 {
 	FlushConsoleInputBuffer(stdInHandle);
 }
 
-void terminalSetTextColor255(Color color);
-void terminalSetTextColor16(Color16 color);
+void terminalSetTextColor(Color colorForeground)
+{
+	if (colorEquals(colorForeground, currentForeColor) || colorEquals(colorForeground, COLOR_TRANSPARENT))
+		return;
+	currentForeColor.R = colorForeground.R;
+	currentForeColor.G = colorForeground.G;
+	currentForeColor.B = colorForeground.B;
+	updateColor();
+}
+void terminalSetTextColorBackground(Color colorBackground)
+{
+	if (colorEquals(colorBackground, currentBackColor) || colorEquals(colorBackground, COLOR_TRANSPARENT))
+		return;
+	currentBackColor.R = colorBackground.R;
+	currentBackColor.G = colorBackground.G;
+	currentBackColor.B = colorBackground.B;
+	updateColor();
+}
+void updateColor()
+{
+	char strColor[48];
+	// snprintf(strColor, sizeof(strColor), "\033[0m");
+	snprintf(strColor, sizeof(strColor), "\033[38;2;%d;%d;%dm", currentForeColor.R, currentForeColor.G, currentForeColor.B);
+	addStrToBuffer(strColor);
+	snprintf(strColor, sizeof(strColor), "\033[48;2;%d;%d;%dm", currentBackColor.R, currentBackColor.G, currentBackColor.B);
+	addStrToBuffer(strColor);
+}
+void terminalSetTextColor16(Color16 color)
+{
+	SetConsoleTextAttribute(stdOutHandle, color);
+}
 
 Vector2Int terminalGetMousePos()
 {
-	LPPOINT posPoint;
-	// GetCursorPos(posPoint);
-	return (Vector2Int){posPoint->x, posPoint->y};
-}
+	return mousePos;
+	/*POINT pos;
+	HWND hwnd = GetConsoleWindow();
+	GetCursorPos(&pos);
+	printf("Screen: %ld %ld\n", pos.x, pos.y);
 
+	ScreenToClient(hwnd, &pos);
+
+	printf("Client: %ld %ld\n", pos.x, pos.y);
+	return (Vector2Int){pos.x, pos.y};*/
+}
 void terminalSetCursorPos(Vector2Int pos)
 {
 	COORD coord;
@@ -177,13 +206,21 @@ void terminalSetCursorVisible(int visible)
 	consoleCursorInfo.bVisible = visible;
 	SetConsoleCursorInfo(stdOutHandle, &consoleCursorInfo);
 }
-Vector2Int terminalGetCursor()
+Vector2Int terminalGetCursorPos()
 {
+	POINT coord;
+	GetCursorPos(&coord);
+	return (Vector2Int){coord.x, coord.y};
 }
 
-void terminalDrawChar(char character);
-void terminalDrawUTF(char character[4]);
-void terminalDrawText(char *character);
+void terminalDrawChar(char character)
+{
+	printf("%c", character);
+}
+void terminalDrawText(char *text)
+{
+	printf("%s", text);
+}
 
 void terminalClear()
 {

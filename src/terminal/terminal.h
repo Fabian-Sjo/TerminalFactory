@@ -33,15 +33,16 @@ typedef enum Key
 	KEY_Y,
 	KEY_Z,
 	KEY_ESC,
-	KEY_LEFT_ARROW,
-	KEY_RIGHT_ARROW,
-	KEY_UP_ARROW,
-	KEY_DOWN_ARROW,
 	KEY_SPACE,
 	KEY_AMMOUNT
 } Key;
-
-
+typedef enum KeyState
+{
+	KEY_RELEASED = 0,
+	KEY_JUST_RELEASED = -1,
+	KEY_PRESSED = 1,
+	KEY_JUST_PRESSED = 2,
+} KeyState;
 
 typedef enum Color16
 {
@@ -68,21 +69,19 @@ void terminalReset();
 
 void poolInput();
 
-void terminalSetTextColor255(Color color);
+void terminalSetTextColor(Color color);
+void terminalSetTextColorBackground(Color color);
 void terminalSetTextColor16(Color16 color);
 
-int terminalIsKeyPressed(Key key);
-int terminalIsKeyHeld(Key key);
-int terminalIsKeyReleased(Key key);
+KeyState terminalGetKeyState(Key key);
 Vector2Int terminalGetMousePos();
 
 void terminalSetCursorPos(Vector2Int pos);
 void terminalSetCursorSize(int size);
 void terminalSetCursorVisible(int visible);
-Vector2Int terminalGetCursor();
+Vector2Int terminalGetCursorPos();
 
 void terminalDrawChar(char character);
-void terminalDrawUTF(char character[4]);
 void terminalDrawText(char *character);
 
 void terminalDraw();
