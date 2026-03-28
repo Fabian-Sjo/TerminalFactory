@@ -202,7 +202,10 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 						Tile *tile = getChunkTile(chunk, localX, localY);
 						if (tile->kind != TILE_NONE)
 						{
-							Sprite tileSprite = getTileDefinition(tile->kind)->getSprite(tile->instanceID, (Vector2Int){globalX, globalY}, gameData);
+							TileDefinition *def = getTileDefinition(tile->kind);
+							if (!def)
+								continue;
+							Sprite tileSprite = def->getSprite(tile->instanceID, (Vector2Int){globalX, globalY}, gameData);
 							// Sprite tileSprite = tileGetSprite(tile);
 							sprite.icon = tileSprite.icon;
 							sprite.colorFore = tileSprite.colorFore;

@@ -2,7 +2,7 @@
 #define GAMELOOP_H
 
 void addFunctionStart(void (*function)());
-void addFunctionLoop(void (*function)(long deltaTime));
+void addFunctionLoop(void (*function)(double deltaTime));
 void addFunctionStop(void (*function)());
 void setFps(int fps);
 void startGame();

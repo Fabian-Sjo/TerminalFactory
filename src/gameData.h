@@ -2,14 +2,13 @@
 #define GAMEDATA_H
 
 #include "game/player.h"
-#include "game/input.h"
+//#include "game/input.h"
 #include "world/world.h"
 #include "graphical/canvas.h"
 
 typedef struct GameData
 {
-	KeyEvent keyevent;
-	Player *player;
+	//KeyEvent keyevent
 
 	long frame;
 	long tick;

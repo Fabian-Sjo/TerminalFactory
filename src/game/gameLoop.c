@@ -54,7 +54,7 @@ void gameLoop()
 
         for (int i = 0; i < nrOfFunctionsLoop; i++)
         {
-            functionsLoop[i](nsDiff/NS_PER_MS);
+            functionsLoop[i](((double)nsDiff)/NS_PER_SEC);
         }
 
         timespec_get(&now, TIME_UTC);

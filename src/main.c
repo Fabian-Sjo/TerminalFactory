@@ -1,25 +1,254 @@
+#include "utils/systemIndependant.h"
+#include "utils/perlin.h"
+#include "utils/map.h"
 
 #include "terminal/terminal.h"
-#include "utils/systemIndependant.h"
+
+#include "graphical/renderer.h"
+#include "graphical/canvas.h"
+
+#include "game/player.h"
+#include "game/gameLoop.h"
+
+#include "world/world.h"
+
+#include "gameData.h"
+
+#include <assert.h>
 #include <stdio.h>
+#include <signal.h>
+
+Vector2Int screenSafezone = {0, 10};
+int borderSize = 1;
+
+// World *world = NULL;
+// Canvas *canvas = NULL;
+
+// typedef struct GameData
+//{
+//	KeyEvent keyevent;
+//	Player *player;
+//
+//	int frame;
+//
+//	Vector2Int screenSize;
+//
+//	World *activeWorld;
+//	Canvas *canvas;
+// } GameData;
+GameData gameData;
+Player *player;
+Vector2Int cursorPos;
+TileKind selectedTile = TILE_BELT;
+
+void render(double deltaTime, GameData *gameData);
+void tickPlayer(double deltaTime, GameData gameData);
+
+void debugInfo(double deltaTime, GameData *gameData)
+{
+
+	// printf("\033[2K"); // clear line
+	printf("selected item[%d][%c]: %s        \n", selectedTile, getTileDefinition(selectedTile)->icon, getTileDefinition(selectedTile)->name);
+	printf("screen width: %d height:%d\n", gameData->screenSize.x, gameData->screenSize.y);
+	printf("delta time: %10fms FPS: %3f\n nrOfChunks: %d\n", deltaTime, (1.0 / deltaTime * 1000), nrOfChunks(gameData->activeWorld));
+	printf("Frame: %d  ", gameData->frame++);
+	printf("Pos x: %-3f Pos y: %-3f", player->position.x, player->position.y);
+	printf("drawcalls %d", printCalls);
+	printCalls = 0;
+	// KeyEvent keyEvent = gameData->keyevent;
+	// printf("pressed: %-10s released: %-10s held: %-10s \n", keyToString(keyEvent.pressed), keyToString(keyEvent.released), keyToString(keyEvent.held));
+}
+void redrawCanvasAndGui(GameData *gameData)
+{
+	printf("\033[2J\033[H");
+	gameData->canvas = canvasNew(gameData->screenSize);
+	Vector2Int screenSize = gameData->screenSize;
+	NineRect nineRect = {
+		{{(Sprite){'\\'}, (Sprite){'|'}, (Sprite){'/'}},
+		 {(Sprite){'='}, (Sprite){'.'}, (Sprite){'='}},
+		 {(Sprite){'/'}, (Sprite){'|'}, (Sprite){'\\'}}}};
+	for (int i = 0; i < borderSize; i++)
+	{
+		canvasDrawNineRect(gameData->canvas, (Vector2Int){i, i}, (Vector2Int){screenSize.x - i * 2, screenSize.y - i * 2}, nineRect, FILL_NONE);
+	}
+	// canvasDrawNineRect(canvas, (Vector2Int){10, 10}, (Vector2Int){3,3}, nineRect, FILL_NONE);
+	// canvasDrawNineRect(canvas, (Vector2Int){13, 10}, (Vector2Int){5,3}, nineRect, FILL_NONE);
+	// canvasDrawNineRect(canvas, (Vector2Int){10, 14}, (Vector2Int){7,7}, nineRect, FILL_NONE);
+	//
+	//
+	// cavasDrawRectangle(canvas, (Vector2Int){2, 2}, (Vector2Int){5, 5}, (Sprite){'#'}, FILL_ALL);
+	// cavasDrawRectangle(canvas, (Vector2Int){8, 2}, (Vector2Int){5, 5}, (Sprite){'+'}, FILL_NONE);
+	// cavasDrawRectangle(canvas, (Vector2Int){20, 20}, (Vector2Int){5, 5}, (Sprite){'#'}, FILL_ALL);
+}
+void loop(double deltaTime)
+{
+	// gameData.keyevent = getKeyEvent();
+	gameData.frame++;
+	gameData.tick++;
+	tickPlayer(deltaTime, gameData);
+
+	worldTick(&gameData);
+	// debugInfo(deltaTime, keyEvent);
+	generateChunk(gameData.activeWorld, player->position.x, player->position.y);
+
+	debugInfo(deltaTime, &gameData);
+	render(deltaTime, &gameData);
+}
+Vector2Int screenToWorld(Vector2Int screen)
+{
+	return vecAddI((Vector2Int){-1, -1},vecAddI(vecSubI(screen, vecDivI(gameData.screenSize, (Vector2Int){2, 2})), vecRound(player->position)));
+}
+void render(double deltaTime, GameData *gameData)
+{
+	Vector2Int termsize = getTermSize();
+	termsize = vecSubI(termsize, screenSafezone);
+	if (termsize.x != gameData->screenSize.x || termsize.y != gameData->screenSize.y)
+	{
+		gameData->screenSize = termsize;
+		redrawCanvasAndGui(gameData);
+	}
+	Vector2Int actualScreenSize = vecSubI(gameData->screenSize, screenSafezone);
+	Vector2Int position = {
+		player->position.x - gameData->screenSize.x / 2,
+		player->position.y - gameData->screenSize.y / 2};
+
+	writeAreaToCanvas(gameData->activeWorld, gameData->canvas, position,
+					  (Vector2Int){
+						  gameData->screenSize.x - borderSize * 5,
+						  gameData->screenSize.y - borderSize * 5},
+					  (Vector2Int){borderSize, borderSize}, gameData);
+
+	// cursor
+	static double blinker;
+	blinker += deltaTime;
+	if ((int)(blinker) % 2)
+	{
+		canvasSetSprite(gameData->canvas, cursorPos, (Sprite){'.', COLOR_WHITE, COLOR_TRANSPARENT});
+	}
+	else
+	{
+		Vector2Int previewSize = getTileSize(selectedTile);
+		Vector2Int previewOriginOffset = getTileOriginOffset(selectedTile);
+		Vector2Int buildPos = screenToWorld(cursorPos);
+		for (int x = 0; x < previewSize.x; x++)
+		{
+			for (int y = 0; y < previewSize.y; y++)
+			{
+				Vector2Int previewPos = vecAddI(cursorPos, (Vector2Int){x, y});
+				previewPos = vecSubI(previewPos, previewOriginOffset);
+				if (previewPos.x < gameData->screenSize.x && previewPos.y < gameData->screenSize.y)
+				{
+					Sprite sprite = getTileDefinition(selectedTile)->getSprite(-1, (Vector2Int){x, y}, gameData);
+					if (!canPlaceTile(gameData->activeWorld, vecAddI(buildPos, vecSubI((Vector2Int){x, y}, previewOriginOffset)), selectedTile))
+					{
+						sprite.colorFore = (Color){100, 0, 0};
+					}
+					else
+					{
+						sprite.colorFore = (Color){0, 30, 0};
+					}
+					sprite.colorBack = COLOR_TRANSPARENT;
+					canvasSetSprite(gameData->canvas, previewPos, sprite);
+				}
+			}
+		}
+	}
+	terminalSetCursorPos((Vector2Int){0, 0});
+	rendererDrawCanvas(gameData->canvas);
+	rendererFlush();
+	// terminalDrawCanvas(gameData->canvas);
+	// terminalDraw();
+}
+void tickPlayer(double deltaTime, GameData gameData)
+{
+
+	poolInput();
+	cursorPos = terminalGetMousePos();
+	if (terminalGetKeyState(KEY_ESC) == KEY_JUST_PRESSED)
+	{
+		stopGame();
+	};
+	if (terminalGetKeyState(KEY_Q) == KEY_JUST_PRESSED)
+	{
+		selectedTile--;
+		if (selectedTile < 0)
+			selectedTile = TILE_COUNT - 1;
+	};
+	if (terminalGetKeyState(KEY_E) == KEY_JUST_PRESSED)
+	{
+		selectedTile++;
+		if (selectedTile >= TILE_COUNT)
+			selectedTile = 0;
+	};
+	printf("sState %d", terminalGetKeyState(KEY_S));
+	if (terminalGetKeyState(KEY_S))
+	{
+		player->position.y += deltaTime * player->speed;
+	};
+	if (terminalGetKeyState(KEY_W))
+	{
+		player->position.y -= deltaTime * player->speed;
+	};
+	if (terminalGetKeyState(KEY_A))
+	{
+		player->position.x -= deltaTime * player->speed;
+	};
+	if (terminalGetKeyState(KEY_D))
+	{
+		player->position.x += deltaTime * player->speed;
+	};
+	if (terminalGetKeyState(KEY_MOUSE_2))
+	{
+		removeTile(gameData.activeWorld, screenToWorld(cursorPos));
+	};
+	if (terminalGetKeyState(KEY_MOUSE_1))
+	{
+ 		placeTile(gameData.activeWorld, screenToWorld(cursorPos), selectedTile);
+	};
+}
+void start()
+{
+	printf("\033[2J");	// clear terminal
+	printf("\33[?25l"); // reset ansi
+	player = playerNew();
+	World *world = createWorld();
+	gameData.activeWorld = world;
+	gameData.canvas = canvasNew((Vector2Int){30, 30});
+	// canvasDrawNineRect(canvas, (Vector2Int){20, 2}, (Vector2Int){10, 10}, nineRect, FILL_NONE);
+
+	// canvasDrawNineRect(canvas, (Vector2Int){24, 6}, (Vector2Int){10, 10}, nineRect, FILL_NONE);
+	//  areaAsSprites(world, (Vector2Int){1, 1}, (Vector2Int){3, 3});
+
+	// areaAsSprites(world, (Vector2Int){CHUNK_SIZE + 1, 1}, (Vector2Int){CHUNK_SIZE + 3, 3});
+
+	// generateChunk(world, 1, 1);
+}
+void stop()
+{
+	// TODO ansi doesnt reset, leaves colors
+	printf("\033[0");
+	printf("\33[?25l"); // reset ansi
+	printf("\033[2J");	// clear terminal
+	printf("\033[H");	// scroll back terminal
+	fflush(stdout);
+}
 
 int main()
 {
 
-	terminalInit();
-	while (1)
-	{
-		poolInput();
-		Vector2Int mousePos = terminalGetMousePos();
-		terminalSetCursorPos(mousePos);
-		printf("mousePos x:%d y:%d", mousePos.x, mousePos.y);
-		terminalDrawText("🥲");
-		// printf("isPressed %d   ",terminalIsKeyPressed(KEY_A));
-		// printf("isHeld %d   ",terminalIsKeyHeld(KEY_A));
-		// printf("isReleased %d\n",terminalIsKeyReleased(KEY_A));
+	// has to be power of 2
+	// assert(CHUNK_SIZE && !(CHUNK_SIZE & (CHUNK_SIZE - 1)));
 
-		msSleep(10);
-	};
+	// signal(SIGINT, stopGame);
+	addFunctionStart(&terminalInit);
+	addFunctionStart(&start);
+
+	addFunctionLoop(&loop);
+
+	addFunctionStop(&stop);
+
+	setFps(200);
+	startGame();
 
 	return 0;
 }

@@ -6,6 +6,8 @@
 #include "renderer.h"
 #include "canvas.h"
 
+#include "../terminal/terminal.h"
+
 char *buffer = NULL;
 int nrOfElements = 0;
 int bufferSize = 2;
@@ -48,18 +50,6 @@ void addCharToBuffer(char c)
 
 	*(buffer + (nrOfElements + 1)) = '\0'; // Add null terminator
 }
-
-void writeCanvasToBuffer(Canvas *canvas)
-{
-	for (int y = 0; y < canvasGetSize(canvas).y; y++)
-	{
-		for (int x = 0; x < canvasGetSize(canvas).x; x++)
-		{
-			addSpriteToBuffer(canvasGetSprite(canvas, (Vector2Int){x, y}));
-		}
-		newLine();
-	}
-}
 void addSpriteToBuffer(Sprite sprite)
 {
 	if (!colorEquals(sprite.colorFore, currentForeColor) && !colorEquals(sprite.colorFore, COLOR_TRANSPARENT))
@@ -74,6 +64,17 @@ void addSpriteToBuffer(Sprite sprite)
 	if (c == '\0')
 		c = ' ';
 	addCharToBuffer(c);
+}
+void rendererDrawCanvas(Canvas *canvas)
+{
+	for (int y = 0; y < canvasGetSize(canvas).y; y++)
+	{
+		for (int x = 0; x < canvasGetSize(canvas).x; x++)
+		{
+			addSpriteToBuffer(canvasGetSprite(canvas, (Vector2Int){x, y}));
+		}
+		newLine();
+	}
 }
 void addSpriteIdToBuffer(SpriteID spriteId)
 {
@@ -112,13 +113,15 @@ void updateColor()
 	snprintf(strColor, sizeof(strColor), "\033[48;2;%d;%d;%dm", currentBackColor.R, currentBackColor.G, currentBackColor.B);
 	addStrToBuffer(strColor);
 }
-void flush()
+void rendererFlush()
 {
 
-	fflush(stdout);
-	printf(buffer);
-	printf("\033[0m"); // reset ansi
-	fflush(stdout);
+	//fflush(stdout);
+	//printf(buffer);
+	terminalSetCursorPos((Vector2Int){0,0});
+	terminalDrawText(buffer);
+	//printf("\033[0m"); // reset ansi
+	//fflush(stdout);
 	nrOfElements = 0;
 	updateColor();
 }

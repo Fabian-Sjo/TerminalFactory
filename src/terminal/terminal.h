@@ -1,8 +1,12 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
+#include <stdbool.h>
 #include "../utils/vector2.h"
 #include "../graphical/color.h"
-#define N_KEY_ROLLOVER 8
+#include "../graphical/canvas.h"
+
+int printCalls;
+
 typedef enum Key
 {
 	KEY_NONE,
@@ -34,6 +38,8 @@ typedef enum Key
 	KEY_Z,
 	KEY_ESC,
 	KEY_SPACE,
+	KEY_MOUSE_1,
+	KEY_MOUSE_2,
 	KEY_AMMOUNT
 } Key;
 typedef enum KeyState
@@ -76,11 +82,14 @@ void terminalSetTextColor16(Color16 color);
 KeyState terminalGetKeyState(Key key);
 Vector2Int terminalGetMousePos();
 
+void terminalSetMouseVisibility(bool visable);
+
 void terminalSetCursorPos(Vector2Int pos);
 void terminalSetCursorSize(int size);
 void terminalSetCursorVisible(int visible);
 Vector2Int terminalGetCursorPos();
 
+void terminalDrawCanvas(Canvas *canvas);
 void terminalDrawChar(char character);
 void terminalDrawText(char *character);
 

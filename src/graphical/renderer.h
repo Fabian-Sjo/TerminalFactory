@@ -7,15 +7,7 @@
 #include "..\utils\vector2.h"
 
 
-void writeCanvasToBuffer(Canvas *canvas);
+void rendererDrawCanvas(Canvas *canvas);
+void rendererFlush();
 
-void addStrToBuffer(char *str);
-void addCharToBuffer(char c);
-void addSpriteIdToBuffer(SpriteID sprite);
-void addSpriteToBuffer(Sprite sprite);
-
-void setColorFore(Color colorForeground);
-void setColorBack(Color colorBackground);
-void flush();
-void newLine();
 #endif

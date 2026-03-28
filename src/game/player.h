@@ -4,7 +4,8 @@
 
 typedef struct Player
 {
-	Vector2Int position;
+	Vector2Float position;
+	float speed;
 } Player;
 void tick(long deltaTime);
 

@@ -37,6 +37,9 @@ Vector2Int canvasGetSize(Canvas *canvas)
 
 void canvasSetSprite(Canvas *canvas, Vector2Int pos, Sprite sprite)
 {
+
+	if (pos.x >= canvas->size.x || pos.y >= canvas->size.y)
+		return;
 	Sprite spriteToSave = canvas->sprites[pos.x + pos.y * canvas->size.x];
 	if (!colorEquals(sprite.colorFore, COLOR_TRANSPARENT))
 		spriteToSave.colorFore = sprite.colorFore;

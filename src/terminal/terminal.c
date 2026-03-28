@@ -1,7 +1,6 @@
 #include "terminal.h"
 #include <stdio.h>
 #include <windows.h>
-
 #pragma comment(lib, "User32.lib") // compile with User32.lib
 
 HANDLE stdOutHandle;
@@ -11,9 +10,6 @@ CONSOLE_CURSOR_INFO consoleCursorInfo;
 Vector2Int mousePos;
 
 KeyState keys[KEY_AMMOUNT];
-
-Color currentForeColor = {0, 0, 0};
-Color currentBackColor = {0, 0, 0};
 
 void terminalInit()
 {
@@ -96,6 +92,10 @@ int keyToCode(Key key)
 		return VK_SPACE;
 	case KEY_ESC:
 		return VK_ESCAPE;
+	case KEY_MOUSE_1:
+		return VK_LBUTTON;
+	case KEY_MOUSE_2:
+		return VK_RBUTTON;
 	default:
 		return 0;
 	}
@@ -145,36 +145,44 @@ void terminalDraw()
 
 void terminalSetTextColor(Color colorForeground)
 {
+	static Color currentForeColor;
 	if (colorEquals(colorForeground, currentForeColor) || colorEquals(colorForeground, COLOR_TRANSPARENT))
 		return;
-	currentForeColor.R = colorForeground.R;
-	currentForeColor.G = colorForeground.G;
-	currentForeColor.B = colorForeground.B;
-	updateColor();
+	currentForeColor = colorForeground;
+	printf("\033[38;2;%d;%d;%dm", currentForeColor.R, currentForeColor.G, currentForeColor.B);
 }
 void terminalSetTextColorBackground(Color colorBackground)
 {
+	static Color currentBackColor = {0, 0, 0};
 	if (colorEquals(colorBackground, currentBackColor) || colorEquals(colorBackground, COLOR_TRANSPARENT))
 		return;
-	currentBackColor.R = colorBackground.R;
-	currentBackColor.G = colorBackground.G;
-	currentBackColor.B = colorBackground.B;
-	updateColor();
+	currentBackColor = colorBackground;
+	printf("\033[48;2;%d;%d;%dm", currentBackColor.R, currentBackColor.G, currentBackColor.B);
 }
-void updateColor()
-{
-	char strColor[48];
-	// snprintf(strColor, sizeof(strColor), "\033[0m");
-	snprintf(strColor, sizeof(strColor), "\033[38;2;%d;%d;%dm", currentForeColor.R, currentForeColor.G, currentForeColor.B);
-	addStrToBuffer(strColor);
-	snprintf(strColor, sizeof(strColor), "\033[48;2;%d;%d;%dm", currentBackColor.R, currentBackColor.G, currentBackColor.B);
-	addStrToBuffer(strColor);
-}
+
 void terminalSetTextColor16(Color16 color)
 {
 	SetConsoleTextAttribute(stdOutHandle, color);
 }
+void terminalSetMouseVisibility(bool visable)
+{
+	SetCursor(NULL);
+	if (!visable)
+		while (true)
+		{
+			int visibility = ShowCursor(false);
+			if (visibility < 1)
+				return;
+		}
+	else
+		while (true)
+		{
 
+			int visibility = ShowCursor(true);
+			if (visibility > 0)
+				return;
+		}
+}
 Vector2Int terminalGetMousePos()
 {
 	return mousePos;
@@ -194,6 +202,7 @@ void terminalSetCursorPos(Vector2Int pos)
 	coord.X = pos.x;
 	coord.Y = pos.y;
 	SetConsoleCursorPosition(stdOutHandle, coord);
+
 	return;
 }
 void terminalSetCursorSize(int size)
@@ -208,13 +217,29 @@ void terminalSetCursorVisible(int visible)
 }
 Vector2Int terminalGetCursorPos()
 {
-	POINT coord;
-	GetCursorPos(&coord);
-	return (Vector2Int){coord.x, coord.y};
 }
+/*
+void terminalDrawSprite(Sprite sprite)
+{
+	terminalSetTextColor(sprite.colorFore);
+	terminalSetTextColorBackground(sprite.colorBack);
+	terminalDrawChar(sprite.icon);
+}
+void terminalDrawCanvas(Canvas *canvas)
+{
 
+	for (int y = 0; y < canvasGetSize(canvas).y; y++)
+	{
+		for (int x = 0; x < canvasGetSize(canvas).x; x++)
+		{
+			terminalDrawSprite(canvasGetSprite(canvas, (Vector2Int){x, y}));
+		}
+	}
+}
+*/
 void terminalDrawChar(char character)
 {
+	printCalls++;
 	printf("%c", character);
 }
 void terminalDrawText(char *text)
