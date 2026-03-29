@@ -8,7 +8,7 @@ Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, Dir
 	struct TileDefinition *def = getTileDefinition(kind);
 	Tile noTile = {
 		.kind = TILE_NONE,
-		.instanceID = -1,
+		.isFunctional = false,
 		.pos = pos,
 	};
 	if (kind == TILE_NONE)
@@ -19,7 +19,7 @@ Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, Dir
 		// TODO log error
 		Tile errorTile = {
 			.kind = TILE_ERROR,
-			.instanceID = -1,
+			.isFunctional = false,
 			.pos = pos,
 		};
 
@@ -37,7 +37,7 @@ Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, Dir
 	handler->instances[instanceID].pos = pos;
 	handler->instances[instanceID].direction = dir;
 	handler->instances[instanceID].data = malloc(def->sizeOfInstance);
-	Tile tile = {.kind = kind, .instanceID = instanceID, .pos = pos};
+	Tile tile = {.kind = kind, .isFunctional = def->isFunctional, .entity.instanceID = instanceID, .pos = pos};
 	if (def->init != NULL)
 		def->init(tile, gameData);
 	return tile;
@@ -46,8 +46,9 @@ Tile createMultiTile(TileHandler *handler, TileKind kind, Vector2Int pos, Direct
 {
 	struct TileInstance originTile = handler->instances[originID];
 	Tile multiTile = {
+		.isFunctional = originTile.kind != TILE_NONE ? getTileDefinition(originTile.kind)->isFunctional : false,
 		.kind = kind,
-		.instanceID = originID,
+		.entity.instanceID = originID,
 		.pos = pos,
 	};
 	return multiTile;

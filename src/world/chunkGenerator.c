@@ -56,89 +56,54 @@ Chunk generateMoonChunk(Vector2Int chunkCoordinate)
 			setChunkTile(&chunk, x, y, (Tile){0});
 
 			double perlinValue = getPerlinValue(globalPos);
-			GroundTile ground = {.sprite = {' ', COLOR_BLACK_CONST, {0, 0, 0}}};
 
-			if (perlinValue < 0.3)
-				ground = (GroundTile){.sprite = {' ', COLOR_BLACK_CONST, {0, 0, 0}}};
-			else if (perlinValue < 0.6)
-				ground = (GroundTile){.sprite = {' ', COLOR_BLACK_CONST, {0, 0, 0}}};
-			else if (perlinValue < 0.6)
-				ground = (GroundTile){.sprite = {' ', COLOR_BLACK_CONST, {0, 0, 0}}};
-			else if (perlinValue < 0.66)
-			{
-				double sides = perlin_Get2d(
-								   globalPos.x + 1, globalPos.y, 0.1, 1) +
-							   perlin_Get2d(
-								   globalPos.x - 1, globalPos.y, 0.2, 1);
-				double upDown = perlin_Get2d(
-									globalPos.x, globalPos.y + 1, 0.1, 1) +
-								perlin_Get2d(
-									globalPos.x, globalPos.y - 1, 0.2, 1);
-				double rightDiagonal = perlin_Get2d(
-										   globalPos.x + 1, globalPos.y + 1, 0.1, 1) +
-									   perlin_Get2d(
-										   globalPos.x - 1, globalPos.y - 1, 0.2, 1);
-				double leftDiagonal = perlin_Get2d(
-										  globalPos.x - 1, globalPos.y + 1, 0.1, 1) +
-									  perlin_Get2d(
-										  globalPos.x + 1, globalPos.y - 1, 0.2, 1);
-
-				if (upDown > sides && upDown > rightDiagonal && upDown > leftDiagonal)
-					ground = (GroundTile){.sprite = {'|', COLOR_BLACK_CONST, {0, 0, 0}}};
-				else if (sides > rightDiagonal && sides > leftDiagonal)
-					ground = (GroundTile){.sprite = {'-', COLOR_BLACK_CONST, {0, 0, 0}}};
-				else if (rightDiagonal > leftDiagonal)
-					ground = (GroundTile){.sprite = {'\\', COLOR_BLACK_CONST, {0, 0, 0}}};
-				else
-					ground = (GroundTile){.sprite = {'/', COLOR_BLACK_CONST, {0, 0, 0}}};
-			}
 			int random = ((int)(perlinValue * 100) ^ (int)(perlinValue * 1000)) % 100;
-
+			
 			Vector2Float normal = sobelFilter(&getPerlinValue, globalPos);
 			double direction = atan2(normal.y, normal.x);
 			direction = ((direction / 3.14159) + 1) / 2; // 0 to 1
-
-			char sprite = ' ';
-
+			
+			Tile tile = (Tile){.kind = TILE_NONE, .isFunctional = false, .pos = globalPos};
 			double magnitude = sqrt(normal.x * normal.x + normal.y * normal.y);
-			if (magnitude > 0.1)
+			if(magnitude < 0.06)
 			{
-				if (random > 90)
-					sprite = '.';
+				tile.kind = TILE_ROCK;
+				tile.sprite.icon = 'O';
 			}
-			else if (magnitude <= 0.06)
+			else if (magnitude < 0.1)
 			{
-				if (random > 70)
-					sprite = 'O';
-			}
-			else
-			{
+				tile.kind = TILE_ROCK;
 				if (direction < 0.1)
-					sprite = '|';
+				tile.sprite.icon = '|';
 				else if (direction < 0.125)
-					sprite = '/';
+				tile.sprite.icon = '/';
 				else if (direction < 0.325)
-					sprite = '-';
+				tile.sprite.icon = '-';
 				else if (direction < 0.425)
-					sprite = '\\';
+				tile.sprite.icon = '\\';
 				else if (direction < 0.625)
-					sprite = '|';
+				tile.sprite.icon = '|';
 				else if (direction < 0.675)
-					sprite = '/';
+				tile.sprite.icon = '/';
 				else if (direction < 0.825)
-					sprite = '-';
+				tile.sprite.icon = '-';
 				else if (direction < 0.925)
-					sprite = '\\';
+				tile.sprite.icon = '\\';
 				else
-					sprite = '|';
+				tile.sprite.icon = '|';
 			}
 			int colorValue = fabs(getPerlinValue(globalPos)) * 100;
 			if (colorValue > 254)
-				colorValue = 254;
-
+			colorValue = 254;
 			
-			setChunkTile(&chunk, x, y, (Tile){.kind = TILE_NONE, .instanceID = -1, .pos = globalPos});
-			setChunkGroundTile(&chunk, x, y, (GroundTile){.sprite = {sprite, COLOR_BLACK_CONST, {0,0,0}}});
+			setChunkTile(&chunk, x, y, tile);
+			
+			GroundTile groundTile = (GroundTile){.sprite = {' ', COLOR_BLACK_CONST, {0, 0, 0}}};
+			if(random < 5)
+			{
+				groundTile.sprite.icon = '.';
+			}
+			setChunkGroundTile(&chunk, x, y, groundTile);
 		}
 	}
 	return chunk;

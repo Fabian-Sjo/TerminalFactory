@@ -1,4 +1,4 @@
-
+#include <assert.h>
 
 #include "chunk.h"
 #include "tiles.h"
@@ -37,6 +37,8 @@ void worldTick(GameData *gameData)
 }
 void *worldTileFromInstanceID(World *world, int instanceID)
 {
+	if (instanceID < 0 || instanceID >= world->tileHandler.count)
+		return NULL;
 	return world->tileHandler.instances[instanceID].data;
 }
 Direction worldTileDirFromId(World *world, int instanceID)
@@ -182,18 +184,9 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 						sprite = getGroundTileSprite(groundTile);
 
 						Tile *tile = getChunkTile(chunk, localX, localY);
-						if (tile->kind != TILE_NONE)
-						{
-							TileDefinition *def = getTileDefinition(tile->kind);
-							if (!def)
-								continue;
-							Sprite tileSprite = tile->sprite;
-							if (def->getSprite != NULL)
-								tileSprite = def->getSprite(tile->instanceID, (Vector2Int){globalX, globalY}, gameData);
-							// Sprite tileSprite = tileGetSprite(tile);
-							sprite.icon = tileSprite.icon;
-							sprite.colorFore = tileSprite.colorFore;
-						}
+						Sprite tileSprite = getTileSprite(*tile, (Vector2Int){globalX, globalY}, *gameData);
+						if (tileSprite.icon != '\0' && tileSprite.icon != ' ' && !colorEquals(tileSprite.colorFore, COLOR_TRANSPARENT))
+							sprite = tileSprite;
 					}
 
 					int screenX = globalX - posA.x;
@@ -280,17 +273,20 @@ int placeTile(World *world, Vector2Int originPosition, Direction dir, TileKind t
 				position.y -= CHUNK_SIZE - 1;
 			int chunkY = position.y / CHUNK_SIZE;
 			Tile *oldTile = getChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY);
-			if (oldTile->kind != TILE_NONE)
-				destroyFunctionTile(&world->tileHandler, oldTile->instanceID);
+			if (oldTile->kind != TILE_NONE && oldTile->isFunctional)
+				destroyFunctionTile(&world->tileHandler, oldTile->entity.instanceID);
 			Tile tile;
-			if (x == 0 && y == 0)
+			if (getTileDefinition(tileKind)->isFunctional)
 			{
-				tile = createFunctionTile(&world->tileHandler, tileKind, originPosition, dir, NULL);
-				originID = tile.instanceID;
-			}
-			else
-			{
-				tile = createMultiTile(&world->tileHandler, tileKind, (Vector2Int){x, y}, dir, originID);
+				if (x == 0 && y == 0)
+				{
+					tile = createFunctionTile(&world->tileHandler, tileKind, originPosition, dir, NULL);
+					originID = tile.entity.instanceID;
+				}
+				else
+				{
+					tile = createMultiTile(&world->tileHandler, tileKind, (Vector2Int){x, y}, dir, originID);
+				}
 			}
 
 			setChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, tile);
@@ -302,12 +298,17 @@ void removeTile(World *world, Vector2Int deletePosition)
 {
 
 	Tile *tile = getTile(world, deletePosition.x, deletePosition.y);
-	Vector2Int originPosition = worldTileOriginPosFromId(world, tile->instanceID);
 	if (tile == NULL || tile->kind == TILE_NONE)
 		return;
+
+	Vector2Int originPosition = tile->pos;
+	if (tile->isFunctional)
+	{
+		originPosition = worldTileOriginPosFromId(world, tile->entity.instanceID);
+		destroyFunctionTile(&world->tileHandler, tile->entity.instanceID);
+	}
 	TileDefinition *def = getTileDefinition(tile->kind);
 	Vector2Int tileSize = def->size;
-	destroyFunctionTile(&world->tileHandler, tile->instanceID);
 	for (int x = 0; x < tileSize.x; x++)
 	{
 		for (int y = 0; y < tileSize.y; y++)
@@ -324,7 +325,7 @@ void removeTile(World *world, Vector2Int deletePosition)
 			int chunkY = position.y / CHUNK_SIZE;
 			Tile noTile = {
 				.kind = TILE_NONE,
-				.instanceID = -1,
+				.isFunctional = false,
 			};
 			setChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, noTile);
 		}

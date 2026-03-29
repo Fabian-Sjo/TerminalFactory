@@ -15,7 +15,8 @@ void conveyorTick(int instanceID, GameData *gameData)
 };
 Sprite conveyorSprite(int instanceID, Vector2Int pos, GameData *gameData)
 {
-	ConveyorInstance *instance = (ConveyorInstance *)worldTileFromInstanceID(gameData->activeWorld, instanceID);
+	World *world = gameData->activeWorld;
+	ConveyorInstance *instance = (ConveyorInstance *)worldTileFromInstanceID(world, instanceID);
 	Vector2Int offset = vecSubI(pos, worldTileOriginPosFromId(gameData->activeWorld, instanceID));
 	Direction dir = instanceID;
 	if (instanceID >= 0)
@@ -57,6 +58,7 @@ Sprite bigTileSprite(int instanceID, Vector2Int pos, GameData *gameData)
 
 const TileDefinition TILE_DEFS[TILE_COUNT] = {
 	[TILE_ERROR] = {
+		.isFunctional = true,
 		.getSprite = &errorSprite,
 		.tick = &conveyorTick,
 		.init = &conveyorInit,
@@ -67,16 +69,12 @@ const TileDefinition TILE_DEFS[TILE_COUNT] = {
 		.icon = '0',
 	},
 	[TILE_ROCK] = {
-		.getSprite = NULL,
-		.tick = NULL,
-		.init = NULL,
-		.destroy = NULL,
-		.size = {1, 1},
-		.sizeOfInstance = 0,
+		.isFunctional = false,
 		.name = {'R', 'O', 'C', 'K', '\0'},
 		.icon = 'R',
 	},
 	[TILE_BIG] = {
+		.isFunctional = true,
 		.getSprite = &bigTileSprite,
 		.tick = NULL,
 		.init = NULL,
@@ -87,6 +85,7 @@ const TileDefinition TILE_DEFS[TILE_COUNT] = {
 		.icon = 'B',
 	},
 	[TILE_BELT] = {
+		.isFunctional = true,
 		.getSprite = &conveyorSprite,
 		.tick = &conveyorTick,
 		.init = &conveyorInit,
@@ -102,6 +101,18 @@ TileDefinition *getTileDefinition(TileKind kind)
 	if (kind < 0 || kind >= TILE_COUNT)
 		return NULL;
 	return &TILE_DEFS[kind];
+}
+Sprite getTileSprite(Tile tile, Vector2Int pos, GameData gameData)
+{
+	if (tile.kind == TILE_NONE)
+		return (Sprite){0};
+	if (!tile.isFunctional)
+		return tile.sprite;
+
+	TileDefinition *def = getTileDefinition(tile.kind);
+	if (def == NULL || def->getSprite == NULL)
+		return (Sprite){'?', COLOR_RED, COLOR_BLACK};
+	return def->getSprite(tile.entity.instanceID, pos, &gameData);
 }
 Vector2Int getTileOriginOffset(TileKind kind)
 {

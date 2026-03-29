@@ -121,11 +121,7 @@ void render(double deltaTime, GameData *gameData)
 		player->position.x - gameData->screenSize.x / 2,
 		player->position.y - gameData->screenSize.y / 2};
 
-	writeAreaToCanvas(gameData->activeWorld, gameData->canvas, position,
-					  (Vector2Int){
-						  gameData->screenSize.x - borderSize * 2,
-						  gameData->screenSize.y - borderSize * 2},
-					  (Vector2Int){borderSize, borderSize}, gameData);
+	writeAreaToCanvas(gameData->activeWorld, gameData->canvas, position, (Vector2Int){gameData->screenSize.x - borderSize * 2, gameData->screenSize.y - borderSize * 2}, (Vector2Int){borderSize, borderSize}, gameData);
 
 	/*for (int x = -1; x <= 1; x++)
 	{
@@ -136,7 +132,7 @@ void render(double deltaTime, GameData *gameData)
 			canvasSetSprite(gameData->canvas, playerScreenPos, (Sprite){'@', COLOR_RED_CONST, COLOR_BLACK_CONST});
 		}
 	}*/
-
+	// TODO position desyncs from tileplacement and idk why
 	Vector2Int previewSize = getTileSize(selectedTile);
 	Vector2Int previewOriginOffset = getTileOriginOffset(selectedTile);
 	Vector2Int buildPos = screenToWorld(cursorPos);
@@ -220,7 +216,7 @@ void tickPlayer(double deltaTime, GameData gameData)
 	{
 		settingDoHorisontalSpacing = !settingDoHorisontalSpacing;
 	};
-	if (terminalGetKeyState(KEY_MOUSE_2))
+	if (terminalGetKeyState(KEY_SPACE))
 	{
 		removeTile(gameData.activeWorld, screenToWorld(cursorPos));
 	};
