@@ -10,6 +10,7 @@ typedef struct GameData GameData;
 typedef enum
 {
 	TILE_NONE = 0,
+	TILE_ROCK,
 	TILE_ERROR,
 	TILE_BELT,
 	TILE_BIG,
@@ -26,6 +27,7 @@ typedef enum Direction
 typedef struct Tile
 {
 	TileKind kind;
+	Sprite sprite;
 	int instanceID;
 	Vector2Int pos;
 } Tile;

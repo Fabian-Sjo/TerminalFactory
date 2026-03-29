@@ -187,7 +187,9 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 							TileDefinition *def = getTileDefinition(tile->kind);
 							if (!def)
 								continue;
-							Sprite tileSprite = def->getSprite(tile->instanceID, (Vector2Int){globalX, globalY}, gameData);
+							Sprite tileSprite = tile->sprite;
+							if (def->getSprite != NULL)
+								tileSprite = def->getSprite(tile->instanceID, (Vector2Int){globalX, globalY}, gameData);
 							// Sprite tileSprite = tileGetSprite(tile);
 							sprite.icon = tileSprite.icon;
 							sprite.colorFore = tileSprite.colorFore;

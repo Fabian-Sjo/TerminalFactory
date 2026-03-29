@@ -43,7 +43,6 @@ Vector2Int cursorPos;
 Direction placeDirection = DIR_NORTH;
 TileKind selectedTile = TILE_BELT;
 
-
 void render(double deltaTime, GameData *gameData);
 void tickPlayer(double deltaTime, GameData gameData);
 
@@ -85,26 +84,33 @@ void redrawCanvasAndGui(GameData *gameData)
 void loop(double deltaTime)
 {
 	// gameData.keyevent = getKeyEvent();
+
 	gameData.frame++;
 	gameData.tick++;
 	tickPlayer(deltaTime, gameData);
 
 	worldTick(&gameData);
 	// debugInfo(deltaTime, keyEvent);
-	generateChunk(gameData.activeWorld, player->position.x, player->position.y);
 
 	debugInfo(deltaTime, &gameData);
 	render(deltaTime, &gameData);
+
+	int chunkGenerateRadius = 3;
+	for (int x = -chunkGenerateRadius; x < chunkGenerateRadius; x++)
+	{
+		for (int y = -chunkGenerateRadius; y < chunkGenerateRadius; y++)
+			generateChunk(gameData.activeWorld, player->position.x + x * 8, player->position.y + y * 8);
+	}
 }
 Vector2Int screenToWorld(Vector2Int screen)
 {
-	
+
 	return vecAddI((Vector2Int){-1, -1}, vecAddI(vecSubI(screen, vecDivI(gameData.screenSize, (Vector2Int){2, 2})), vecRound(player->position)));
 }
 void render(double deltaTime, GameData *gameData)
 {
 	Vector2Int termsize = getTermSize();
-	termsize = vecDivI(vecSubI(termsize, screenSafezone),(Vector2Int){1 + settingDoHorisontalSpacing,1});
+	termsize = vecDivI(vecSubI(termsize, screenSafezone), (Vector2Int){1 + settingDoHorisontalSpacing, 1});
 	if (termsize.x != gameData->screenSize.x || termsize.y != gameData->screenSize.y)
 	{
 		gameData->screenSize = termsize;
@@ -121,41 +127,45 @@ void render(double deltaTime, GameData *gameData)
 						  gameData->screenSize.y - borderSize * 2},
 					  (Vector2Int){borderSize, borderSize}, gameData);
 
-	// cursor
-	/*static double blinker;
-	blinker += deltaTime;
-	if ((int)(blinker) % 2)
+	/*for (int x = -1; x <= 1; x++)
 	{
-		canvasSetSprite(gameData->canvas, cursorPos, (Sprite){'.', COLOR_WHITE, COLOR_TRANSPARENT});
-	}
-	else*/
-	{
-		Vector2Int previewSize = getTileSize(selectedTile);
-		Vector2Int previewOriginOffset = getTileOriginOffset(selectedTile);
-		Vector2Int buildPos = screenToWorld(cursorPos);
-		for (int x = 0; x < previewSize.x; x++)
+		for (int y = -1; y <= 1; y++)
 		{
-			for (int y = 0; y < previewSize.y; y++)
+			Vector2Int playerScreenPos = vecAddI(vecDivI(gameData->screenSize, (Vector2Int){2, 2}), (Vector2Int){x, y});
+
+			canvasSetSprite(gameData->canvas, playerScreenPos, (Sprite){'@', COLOR_RED_CONST, COLOR_BLACK_CONST});
+		}
+	}*/
+
+	Vector2Int previewSize = getTileSize(selectedTile);
+	Vector2Int previewOriginOffset = getTileOriginOffset(selectedTile);
+	Vector2Int buildPos = screenToWorld(cursorPos);
+	for (int x = 0; x < previewSize.x; x++)
+	{
+		for (int y = 0; y < previewSize.y; y++)
+		{
+			Vector2Int previewPos = vecAddI(cursorPos, (Vector2Int){x, y});
+			previewPos = vecSubI(previewPos, previewOriginOffset);
+			if (previewPos.x < gameData->screenSize.x && previewPos.y < gameData->screenSize.y)
 			{
-				Vector2Int previewPos = vecAddI(cursorPos, (Vector2Int){x, y});
-				previewPos = vecSubI(previewPos, previewOriginOffset);
-				if (previewPos.x < gameData->screenSize.x && previewPos.y < gameData->screenSize.y)
+				TileDefinition *def = getTileDefinition(selectedTile);
+				Sprite sprite = (Sprite){def->icon, COLOR_WHITE, COLOR_BLACK};
+				if (def->getSprite != NULL)
+					sprite = def->getSprite(placeDirection, (Vector2Int){x, y}, gameData);
+				if (!canPlaceTile(gameData->activeWorld, vecAddI(buildPos, vecSubI((Vector2Int){x, y}, previewOriginOffset)), selectedTile))
 				{
-					Sprite sprite = getTileDefinition(selectedTile)->getSprite(placeDirection, (Vector2Int){x, y}, gameData);
-					if (!canPlaceTile(gameData->activeWorld, vecAddI(buildPos, vecSubI((Vector2Int){x, y}, previewOriginOffset)), selectedTile))
-					{
-						sprite.colorFore = (Color){100, 0, 0};
-					}
-					else
-					{
-						sprite.colorFore = (Color){0, 30, 0};
-					}
-					sprite.colorBack = COLOR_TRANSPARENT;
-					canvasSetSprite(gameData->canvas, previewPos, sprite);
+					sprite.colorFore = (Color){100, 0, 0};
 				}
+				else
+				{
+					sprite.colorFore = (Color){0, 30, 0};
+				}
+				sprite.colorBack = COLOR_TRANSPARENT;
+				canvasSetSprite(gameData->canvas, previewPos, sprite);
 			}
 		}
 	}
+
 	terminalSetCursorPos((Vector2Int){0, 0});
 	rendererDrawCanvas(gameData->canvas);
 	rendererFlush();
@@ -166,7 +176,7 @@ void tickPlayer(double deltaTime, GameData gameData)
 {
 
 	poolInput();
-	cursorPos = vecDivI(terminalGetMousePos(),(Vector2Int){1 + settingDoHorisontalSpacing,1});
+	cursorPos = vecDivI(terminalGetMousePos(), (Vector2Int){1 + settingDoHorisontalSpacing, 1});
 	if (terminalGetKeyState(KEY_ESC) == KEY_JUST_PRESSED)
 	{
 		stopGame();

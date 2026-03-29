@@ -6,6 +6,6 @@ Player *playerNew()
 {
 	Player *player = malloc(sizeof(Player));
 	player->position = (Vector2Float){0, 0};
-	player->speed = 7;
+	player->speed = 15;
 	return player;
 }
