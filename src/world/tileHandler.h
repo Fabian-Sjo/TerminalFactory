@@ -8,6 +8,7 @@ struct TileInstance
 {
 	TileKind kind;
 	Vector2Int pos;
+	Direction direction;
 	void *data;
 };
 typedef struct TileHandler
@@ -17,8 +18,8 @@ typedef struct TileHandler
 } TileHandler;
 
 // returns the tile it created, so it can be added to the world
-Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, GameData *gameData);
-Tile createMultiTile(TileHandler *handler,TileKind kind, Vector2Int pos, int originID);
+Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, Direction dir, GameData *gameData);
+Tile createMultiTile(TileHandler *handler, TileKind kind, Vector2Int pos, Direction dir, int originID);
 
 void destroyFunctionTile(TileHandler *handler, int instanceID);
 void tickFunctionTiles(TileHandler *handler, GameData *gameData);

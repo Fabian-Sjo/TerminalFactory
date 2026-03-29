@@ -13,6 +13,7 @@
 #include "world/world.h"
 
 #include "gameData.h"
+#include "settings.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -39,7 +40,9 @@ int borderSize = 1;
 GameData gameData;
 Player *player;
 Vector2Int cursorPos;
+Direction placeDirection = DIR_NORTH;
 TileKind selectedTile = TILE_BELT;
+
 
 void render(double deltaTime, GameData *gameData);
 void tickPlayer(double deltaTime, GameData gameData);
@@ -50,11 +53,10 @@ void debugInfo(double deltaTime, GameData *gameData)
 	// printf("\033[2K"); // clear line
 	printf("selected item[%d][%c]: %s        \n", selectedTile, getTileDefinition(selectedTile)->icon, getTileDefinition(selectedTile)->name);
 	printf("screen width: %d height:%d\n", gameData->screenSize.x, gameData->screenSize.y);
-	printf("delta time: %10fms FPS: %3f\n nrOfChunks: %d\n", deltaTime, (1.0 / deltaTime * 1000), nrOfChunks(gameData->activeWorld));
+	printf("delta time: %10fs FPS: %3f\n nrOfChunks: %d\n", deltaTime, (1.0 / deltaTime), nrOfChunks(gameData->activeWorld));
 	printf("Frame: %d  ", gameData->frame++);
 	printf("Pos x: %-3f Pos y: %-3f", player->position.x, player->position.y);
-	printf("drawcalls %d", printCalls);
-	printCalls = 0;
+	printf("placeDir %d", placeDirection);
 	// KeyEvent keyEvent = gameData->keyevent;
 	// printf("pressed: %-10s released: %-10s held: %-10s \n", keyToString(keyEvent.pressed), keyToString(keyEvent.released), keyToString(keyEvent.held));
 }
@@ -96,12 +98,13 @@ void loop(double deltaTime)
 }
 Vector2Int screenToWorld(Vector2Int screen)
 {
-	return vecAddI((Vector2Int){-1, -1},vecAddI(vecSubI(screen, vecDivI(gameData.screenSize, (Vector2Int){2, 2})), vecRound(player->position)));
+	
+	return vecAddI((Vector2Int){-1, -1}, vecAddI(vecSubI(screen, vecDivI(gameData.screenSize, (Vector2Int){2, 2})), vecRound(player->position)));
 }
 void render(double deltaTime, GameData *gameData)
 {
 	Vector2Int termsize = getTermSize();
-	termsize = vecSubI(termsize, screenSafezone);
+	termsize = vecDivI(vecSubI(termsize, screenSafezone),(Vector2Int){1 + settingDoHorisontalSpacing,1});
 	if (termsize.x != gameData->screenSize.x || termsize.y != gameData->screenSize.y)
 	{
 		gameData->screenSize = termsize;
@@ -114,18 +117,18 @@ void render(double deltaTime, GameData *gameData)
 
 	writeAreaToCanvas(gameData->activeWorld, gameData->canvas, position,
 					  (Vector2Int){
-						  gameData->screenSize.x - borderSize * 5,
-						  gameData->screenSize.y - borderSize * 5},
+						  gameData->screenSize.x - borderSize * 2,
+						  gameData->screenSize.y - borderSize * 2},
 					  (Vector2Int){borderSize, borderSize}, gameData);
 
 	// cursor
-	static double blinker;
+	/*static double blinker;
 	blinker += deltaTime;
 	if ((int)(blinker) % 2)
 	{
 		canvasSetSprite(gameData->canvas, cursorPos, (Sprite){'.', COLOR_WHITE, COLOR_TRANSPARENT});
 	}
-	else
+	else*/
 	{
 		Vector2Int previewSize = getTileSize(selectedTile);
 		Vector2Int previewOriginOffset = getTileOriginOffset(selectedTile);
@@ -138,7 +141,7 @@ void render(double deltaTime, GameData *gameData)
 				previewPos = vecSubI(previewPos, previewOriginOffset);
 				if (previewPos.x < gameData->screenSize.x && previewPos.y < gameData->screenSize.y)
 				{
-					Sprite sprite = getTileDefinition(selectedTile)->getSprite(-1, (Vector2Int){x, y}, gameData);
+					Sprite sprite = getTileDefinition(selectedTile)->getSprite(placeDirection, (Vector2Int){x, y}, gameData);
 					if (!canPlaceTile(gameData->activeWorld, vecAddI(buildPos, vecSubI((Vector2Int){x, y}, previewOriginOffset)), selectedTile))
 					{
 						sprite.colorFore = (Color){100, 0, 0};
@@ -163,7 +166,7 @@ void tickPlayer(double deltaTime, GameData gameData)
 {
 
 	poolInput();
-	cursorPos = terminalGetMousePos();
+	cursorPos = vecDivI(terminalGetMousePos(),(Vector2Int){1 + settingDoHorisontalSpacing,1});
 	if (terminalGetKeyState(KEY_ESC) == KEY_JUST_PRESSED)
 	{
 		stopGame();
@@ -179,6 +182,12 @@ void tickPlayer(double deltaTime, GameData gameData)
 		selectedTile++;
 		if (selectedTile >= TILE_COUNT)
 			selectedTile = 0;
+	};
+	if (terminalGetKeyState(KEY_R) == KEY_JUST_PRESSED)
+	{
+		placeDirection--;
+		if (placeDirection < DIR_WEST)
+			placeDirection = DIR_NORTH;
 	};
 	printf("sState %d", terminalGetKeyState(KEY_S));
 	if (terminalGetKeyState(KEY_S))
@@ -197,13 +206,17 @@ void tickPlayer(double deltaTime, GameData gameData)
 	{
 		player->position.x += deltaTime * player->speed;
 	};
+	if (terminalGetKeyState(KEY_C) == KEY_JUST_PRESSED)
+	{
+		settingDoHorisontalSpacing = !settingDoHorisontalSpacing;
+	};
 	if (terminalGetKeyState(KEY_MOUSE_2))
 	{
 		removeTile(gameData.activeWorld, screenToWorld(cursorPos));
 	};
 	if (terminalGetKeyState(KEY_MOUSE_1))
 	{
- 		placeTile(gameData.activeWorld, screenToWorld(cursorPos), selectedTile);
+		placeTile(gameData.activeWorld, screenToWorld(cursorPos), placeDirection, selectedTile);
 	};
 }
 void start()
@@ -214,6 +227,13 @@ void start()
 	World *world = createWorld();
 	gameData.activeWorld = world;
 	gameData.canvas = canvasNew((Vector2Int){30, 30});
+	int chunkGenerateRadius = 3;
+	for (int x = -chunkGenerateRadius; x < chunkGenerateRadius; x++)
+	{
+		for (int y = -chunkGenerateRadius; y < chunkGenerateRadius; y++)
+			generateChunk(world, x * 8, y * 8);
+	}
+
 	// canvasDrawNineRect(canvas, (Vector2Int){20, 2}, (Vector2Int){10, 10}, nineRect, FILL_NONE);
 
 	// canvasDrawNineRect(canvas, (Vector2Int){24, 6}, (Vector2Int){10, 10}, nineRect, FILL_NONE);

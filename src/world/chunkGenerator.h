@@ -4,6 +4,6 @@
 #include "chunk.h"
 #include "../utils/vector2.h"
 
-Chunk generateChunk(Vector2Int chunkCoordinate);
+Chunk generateMoonChunk(Vector2Int chunkCoordinate);
 
 #endif

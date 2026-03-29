@@ -1,10 +1,6 @@
 #include "groundTile.h"
 #include <stdlib.h>
 
-struct GroundTile
-{
-	Sprite sprite;
-};
 
 GroundTile GROUND_TILE_WATER =
 	{

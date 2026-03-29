@@ -2,7 +2,7 @@
 #include "tiles.h"
 #include <stdlib.h>
 
-Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, GameData *gameData)
+Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, Direction dir, GameData *gameData)
 {
 	// handler
 	struct TileDefinition *def = getTileDefinition(kind);
@@ -35,13 +35,14 @@ Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, Gam
 	int instanceID = nextOpenSlot;
 	handler->instances[instanceID].kind = kind;
 	handler->instances[instanceID].pos = pos;
+	handler->instances[instanceID].direction = dir;
 	handler->instances[instanceID].data = malloc(def->sizeOfInstance);
 	Tile tile = {.kind = kind, .instanceID = instanceID, .pos = pos};
 	if (def->init != NULL)
 		def->init(tile, gameData);
 	return tile;
 }
-Tile createMultiTile(TileHandler *handler, TileKind kind, Vector2Int pos, int originID)
+Tile createMultiTile(TileHandler *handler, TileKind kind, Vector2Int pos, Direction dir, int originID)
 {
 	struct TileInstance originTile = handler->instances[originID];
 	Tile multiTile = {

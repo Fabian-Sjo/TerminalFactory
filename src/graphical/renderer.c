@@ -5,7 +5,7 @@
 #include "color.h"
 #include "renderer.h"
 #include "canvas.h"
-
+#include "../settings.h"
 #include "../terminal/terminal.h"
 
 char *buffer = NULL;
@@ -64,6 +64,8 @@ void addSpriteToBuffer(Sprite sprite)
 	if (c == '\0')
 		c = ' ';
 	addCharToBuffer(c);
+	if (settingDoHorisontalSpacing)
+		addCharToBuffer(' ');
 }
 void rendererDrawCanvas(Canvas *canvas)
 {
@@ -116,12 +118,12 @@ void updateColor()
 void rendererFlush()
 {
 
-	//fflush(stdout);
-	//printf(buffer);
-	terminalSetCursorPos((Vector2Int){0,0});
+	// fflush(stdout);
+	// printf(buffer);
+	terminalSetCursorPos((Vector2Int){0, 0});
 	terminalDrawText(buffer);
-	//printf("\033[0m"); // reset ansi
-	//fflush(stdout);
+	// printf("\033[0m"); // reset ansi
+	// fflush(stdout);
 	nrOfElements = 0;
 	updateColor();
 }

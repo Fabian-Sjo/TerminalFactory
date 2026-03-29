@@ -13,7 +13,7 @@ void worldTick(GameData *gameData);
 
 void *worldTileFromInstanceID(World *world, int instanceID);
 Vector2Int worldTileOriginPosFromId(World *world, int instanceID);
-
+Direction worldTileDirFromId(World *world, int instanceID);
 int chunkIsGenerated(World *world, int x, int y);
 void generateChunk(World *world, int x, int y);
 
@@ -26,7 +26,7 @@ Tile *getTile(World *world, int x, int y);
 GroundTile *getGroundTile(World *world, int x, int y);
 
 // returns 0 if successful, negative if failed
-int placeTile(World *world, Vector2Int position, TileKind tileKind);
+int placeTile(World *world, Vector2Int position, Direction dir, TileKind tileKind);
 void removeTile(World *world, Vector2Int position);
 void setGroundTile(World *world, int x, int y, GroundTile tile);
 

@@ -7,20 +7,31 @@
 // example of specific tile
 typedef struct ConveyorInstance
 {
-	short direction;
+	short data;
 } ConveyorInstance;
 void conveyorTick(int instanceID, GameData *gameData)
 {
 	ConveyorInstance *instance = (ConveyorInstance *)worldTileFromInstanceID(gameData->activeWorld, instanceID);
-	instance->direction++;
 };
 Sprite conveyorSprite(int instanceID, Vector2Int pos, GameData *gameData)
 {
 	ConveyorInstance *instance = (ConveyorInstance *)worldTileFromInstanceID(gameData->activeWorld, instanceID);
 	Vector2Int offset = vecSubI(pos, worldTileOriginPosFromId(gameData->activeWorld, instanceID));
-	// if (instance->direction % 2)
-	//	return (Sprite){'7'};
-	return (Sprite){'-' + offset.x};
+	Direction dir = instanceID;
+	if (instanceID >= 0)
+		dir = worldTileDirFromId(gameData->activeWorld, instanceID);
+	char sprite;
+	if (dir == DIR_NORTH)
+		sprite = '^';
+	else if (dir == DIR_EAST)
+		sprite = '>';
+	else if (dir == DIR_SOUTH)
+		sprite = 'v';
+	else if (dir == DIR_WEST)
+		sprite = '<';
+	else
+		sprite = '?';
+	return (Sprite){sprite};
 };
 void conveyorInit(Tile tile, GameData *gameData) {
 

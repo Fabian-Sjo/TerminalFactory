@@ -4,6 +4,7 @@
 #include "tiles.h"
 #include "world.h"
 #include "tileHandler.h"
+#include "chunkGenerator.h"
 
 #include "../gameData.h"
 
@@ -37,6 +38,20 @@ void worldTick(GameData *gameData)
 void *worldTileFromInstanceID(World *world, int instanceID)
 {
 	return world->tileHandler.instances[instanceID].data;
+}
+Direction worldTileDirFromId(World *world, int instanceID)
+{
+	TileHandler *handler = &(world->tileHandler);
+	if (instanceID < 0 || instanceID >= handler->count)
+		return DIR_NORTH;
+	TileKind kind = handler->instances[instanceID].kind;
+	if (kind == TILE_NONE)
+		return DIR_NORTH;
+	TileDefinition *def = getTileDefinition(kind);
+	if (def == NULL)
+		return DIR_NORTH;
+
+	return handler->instances[instanceID].direction;
 }
 Vector2Int worldTileOriginPosFromId(World *world, int instanceID)
 {
@@ -92,47 +107,14 @@ int chunkIsGenerated(World *world, int chunkX, int chunkY)
 
 void generateChunk(World *world, int globalX, int globalY)
 {
-	if (globalX < 0)
-		globalX -= CHUNK_SIZE - 1;
-	int chunkX = globalX / CHUNK_SIZE;
-	if (globalY < 0)
-		globalY -= CHUNK_SIZE - 1;
-	int chunkY = globalY / CHUNK_SIZE;
-	if (chunkIsGenerated(world, chunkX, chunkY))
+	Vector2Int chunkCoords = (Vector2Int){globalX / CHUNK_SIZE, globalY / CHUNK_SIZE};
+	if (chunkIsGenerated(world, chunkCoords.x, chunkCoords.y))
 		return;
-
-	// Tile *tile = &testTile;
-	GroundTile *groundTiles[] = {
-		&GROUND_TILE_WATER,
-		&GROUND_TILE_GRASS_1,
-		&GROUND_TILE_GRASS_2,
-		&GROUND_TILE_GRASS_3,
-	};
 	Chunk *chunk = malloc(sizeof(Chunk));
-	for (int x = 0; x < CHUNK_SIZE; x++)
-	{
-		for (int y = 0; y < CHUNK_SIZE; y++)
-		{
-			// TODO this no work
-			setChunkTile(chunk, x, y, createFunctionTile(&world->tileHandler, TILE_NONE, (Vector2Int){x, y}, NULL));
+	*chunk = generateMoonChunk(
+		(Vector2Int){chunkCoords.x, chunkCoords.y});
 
-			float perlinValue = perlin_Get2d(
-				x + chunkX * CHUNK_SIZE + 10000000,
-				y + chunkY * CHUNK_SIZE + 10000000,
-				0.1, 1);
-			if (perlinValue < 0)
-			{
-				perlinValue = 0;
-			}
-			if (perlinValue >= 1)
-				perlinValue = 0.999999;
-
-			int groundTileIndex = perlinValue * (sizeof(groundTiles) / sizeof(groundTiles[0]));
-
-			setChunkGroundTile(chunk, x, y, groundTiles[groundTileIndex]);
-		}
-	}
-	setChunk(world, chunkX, chunkY, chunk);
+	setChunk(world, chunkCoords.x, chunkCoords.y, chunk);
 }
 
 int divFloor(int a, int b)
@@ -273,7 +255,7 @@ int canPlaceMultiTile(World *world, Vector2Int originPosition, TileKind tileKind
 	}
 	return true;
 }
-int placeTile(World *world, Vector2Int originPosition, TileKind tileKind)
+int placeTile(World *world, Vector2Int originPosition, Direction dir, TileKind tileKind)
 {
 
 	Vector2Int tileSize = getTileSize(tileKind);
@@ -295,17 +277,18 @@ int placeTile(World *world, Vector2Int originPosition, TileKind tileKind)
 			if (position.y < 0)
 				position.y -= CHUNK_SIZE - 1;
 			int chunkY = position.y / CHUNK_SIZE;
-
-			destroyFunctionTile(&world->tileHandler, getChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY)->instanceID);
+			Tile *oldTile = getChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY);
+			if (oldTile->kind != TILE_NONE)
+				destroyFunctionTile(&world->tileHandler, oldTile->instanceID);
 			Tile tile;
 			if (x == 0 && y == 0)
 			{
-				tile = createFunctionTile(&world->tileHandler, tileKind, originPosition, NULL);
+				tile = createFunctionTile(&world->tileHandler, tileKind, originPosition, dir, NULL);
 				originID = tile.instanceID;
 			}
 			else
 			{
-				tile = createMultiTile(&world->tileHandler, tileKind, (Vector2Int){x, y}, originID);
+				tile = createMultiTile(&world->tileHandler, tileKind, (Vector2Int){x, y}, dir, originID);
 			}
 
 			setChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, tile);
@@ -369,5 +352,5 @@ void setGroundTile(World *world, int x, int y, GroundTile *tile)
 	int chunkY = y / CHUNK_SIZE;
 	int chunkLocalX = x - chunkX;
 	int chunkLocalY = y - chunkY;
-	setChunkGroundTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, tile);
+	setChunkGroundTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, *tile);
 }

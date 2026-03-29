@@ -15,6 +15,14 @@ typedef enum
 	TILE_BIG,
 	TILE_COUNT
 } TileKind;
+typedef enum Direction
+{
+	//TODO negative values for previewing tiles, very hacky but it works for now
+	DIR_NORTH = -1,
+	DIR_EAST = -2,
+	DIR_SOUTH = -3,
+	DIR_WEST = -4
+} Direction;
 typedef struct Tile
 {
 	TileKind kind;
@@ -24,6 +32,7 @@ typedef struct Tile
 
 typedef struct TileDefinition
 {
+	//TODO if instanceID is negative, the tile is being previewed and instanceID is used for the direction instead, very ugly but it works for now 
 	Sprite (*getSprite)(int instanceID, Vector2Int pos, GameData *gameData);
 	void (*tick)(int instanceID, GameData *gameData);
 	void (*init)(Tile tile, GameData *gameData);
