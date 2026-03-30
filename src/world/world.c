@@ -1,19 +1,359 @@
+#include <assert.h>
+
 #include "chunk.h"
+#include "tiles.h"
+#include "world.h"
+#include "tileHandler.h"
+#include "chunkGenerator.h"
+
+#include "../gameData.h"
+
+#include "../utils/perlin.h"
+#include "../utils/vector2.h"
+
+#include "../graphical/renderer.h"
+#include "../graphical/canvas.h"
+
 #include "../utils/map.h"
 
-typedef struct 
+#include <stdlib.h>
+#include <stdio.h>
+
+#define true 1
+#define false 0
+struct World
 {
 	Map *chunks;
-} World;
+	TileHandler tileHandler;
+	int tilesMax;
+	int tilesCurrent;
+	void *Tiles;
+};
+void worldTick(GameData *gameData)
+{
 
-void generate(int chunkX, int chunkY){
+	TileHandler *handler = &(gameData->activeWorld->tileHandler);
+	tickFunctionTiles(handler, gameData);
+}
+void *worldTileFromInstanceID(World *world, int instanceID)
+{
+	if (instanceID < 0 || instanceID >= world->tileHandler.count)
+		return NULL;
+	return world->tileHandler.instances[instanceID].data;
+}
+Direction worldTileDirFromId(World *world, int instanceID)
+{
+	TileHandler *handler = &(world->tileHandler);
+	if (instanceID < 0 || instanceID >= handler->count)
+		return DIR_NORTH;
+	TileKind kind = handler->instances[instanceID].kind;
+	if (kind == TILE_NONE)
+		return DIR_NORTH;
+	TileDefinition *def = getTileDefinition(kind);
+	if (def == NULL)
+		return DIR_NORTH;
 
+	return handler->instances[instanceID].direction;
+}
+Vector2Int worldTileOriginPosFromId(World *world, int instanceID)
+{
+	TileHandler *handler = &(world->tileHandler);
+	if (instanceID < 0 || instanceID >= handler->count)
+		return (Vector2Int){0, 0};
+	TileKind kind = handler->instances[instanceID].kind;
+	if (kind == TILE_NONE)
+		return (Vector2Int){0, 0};
+	TileDefinition *def = getTileDefinition(kind);
+	if (def == NULL)
+		return (Vector2Int){0, 0};
+
+	return handler->instances[instanceID].pos;
+}
+int nrOfChunks(World *world)
+{
+	return mapGetSize(world->chunks);
+};
+
+Chunk *getChunk(World *world, unsigned int x, unsigned int y)
+{
+	unsigned long long key = x;
+	key <<= 32;
+	key |= y;
+	return mapGet(world->chunks, key);
 }
 
-Tile getTile(int x, int y){
-
+void setChunk(World *world, unsigned int x, unsigned int y, Chunk *chunk)
+{
+	unsigned long long key = x;
+	key <<= 32;
+	key |= y;
+	mapAdd(world->chunks, key, chunk);
 }
 
-void setTile(Tile tile){
+World *createWorld()
+{
+	World *world = malloc(sizeof(World));
+	world->chunks = mapCreate(sizeof(Map *));
+	for (size_t i = 0; i < MAX_FUNCTION_TILES; i++)
+	{
+		world->tileHandler.instances[i].kind = TILE_NONE;
+		world->tileHandler.instances[i].data = NULL;
+	}
 
+	return world;
+}
+int chunkIsGenerated(World *world, int chunkX, int chunkY)
+{
+	return (getChunk(world, chunkX, chunkY) != NULL);
+}
+
+void generateChunk(World *world, int globalX, int globalY)
+{
+	Vector2Int chunkCoords = (Vector2Int){globalX / CHUNK_SIZE, globalY / CHUNK_SIZE};
+	if (chunkIsGenerated(world, chunkCoords.x, chunkCoords.y))
+		return;
+	Chunk *chunk = malloc(sizeof(Chunk));
+	*chunk = generateMoonChunk(
+		(Vector2Int){chunkCoords.x, chunkCoords.y});
+
+	setChunk(world, chunkCoords.x, chunkCoords.y, chunk);
+}
+
+int divFloor(int a, int b)
+{
+	int q = a / b;
+	int r = a % b;
+
+	if ((r != 0) && ((r < 0) != (b < 0)))
+		q--;
+
+	return q;
+}
+
+void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int size, Vector2Int canvasPos, GameData *gameData)
+{
+	Vector2Int posB = vecAddI(posA, size);
+	int width = posB.x - posA.x;
+	int height = posB.y - posA.y;
+	int required = width * height;
+
+	Vector2Int minChunk = {
+		divFloor(posA.x, CHUNK_SIZE),
+		divFloor(posA.y, CHUNK_SIZE)};
+
+	Vector2Int maxChunk = {
+		divFloor(posB.x, CHUNK_SIZE),
+		divFloor(posB.y, CHUNK_SIZE)};
+
+	for (int chunkX = minChunk.x; chunkX <= maxChunk.x; chunkX++)
+	{
+		for (int chunkY = minChunk.y; chunkY <= maxChunk.y; chunkY++)
+		{
+			Chunk *chunk = getChunk(world, chunkX, chunkY);
+
+			int startX = posA.x - chunkX * CHUNK_SIZE;
+			int endX = posB.x - chunkX * CHUNK_SIZE;
+
+			int startY = posA.y - chunkY * CHUNK_SIZE;
+			int endY = posB.y - chunkY * CHUNK_SIZE;
+
+			if (startX < 0)
+				startX = 0;
+			if (startY < 0)
+				startY = 0;
+			if (endX > CHUNK_SIZE)
+				endX = CHUNK_SIZE;
+			if (endY > CHUNK_SIZE)
+				endY = CHUNK_SIZE;
+
+			int chunkWorldX = chunkX * CHUNK_SIZE;
+			int chunkWorldY = chunkY * CHUNK_SIZE;
+
+			for (int localX = startX; localX < endX; localX++)
+			{
+				for (int localY = startY; localY < endY; localY++)
+				{
+					int globalX = chunkWorldX + localX;
+					int globalY = chunkWorldY + localY;
+
+					Sprite sprite = {' ', COLOR_BLACK};
+
+					if (chunk)
+					{
+						GroundTile *groundTile = getChunkGroundTile(chunk, localX, localY);
+						sprite = getGroundTileSprite(groundTile);
+
+						Tile *tile = getChunkTile(chunk, localX, localY);
+						Sprite tileSprite = getTileSprite(*tile, (Vector2Int){globalX, globalY}, *gameData);
+						if (tileSprite.icon != '\0' && tileSprite.icon != ' ' && !colorEquals(tileSprite.colorFore, COLOR_TRANSPARENT))
+							sprite = tileSprite;
+					}
+
+					int screenX = globalX - posA.x;
+					int screenY = globalY - posA.y;
+
+					int canvasX = canvasPos.x + screenX;
+					int canvasY = canvasPos.y + screenY;
+
+					if (canvasX < 0 || canvasY < 0 ||
+						canvasX >= canvasGetSize(canvas).x ||
+						canvasY >= canvasGetSize(canvas).y)
+						continue;
+					canvasSetSprite(canvas, (Vector2Int){canvasX, canvasY}, sprite);
+					// canvas->sprites[canvasX + canvasY * canvas->size.x] = sprite;
+				}
+			}
+		}
+	}
+}
+
+Tile *getTile(World *world, int x, int y)
+{
+	int chunkLocalX = x & (CHUNK_SIZE - 1);
+	if (x < 0)
+		x -= CHUNK_SIZE - 1;
+	int chunkX = x / CHUNK_SIZE;
+
+	int chunkLocalY = y & (CHUNK_SIZE - 1);
+	if (y < 0)
+		y -= CHUNK_SIZE - 1;
+	int chunkY = y / CHUNK_SIZE;
+
+	Chunk *chunk = getChunk(world, chunkX, chunkY);
+	if (chunk == NULL)
+		return NULL;
+	return getChunkTile(chunk, chunkLocalX, chunkLocalY);
+}
+int canPlaceTile(World *world, Vector2Int position, TileKind tileKind)
+{
+	TileDefinition *def = getTileDefinition(tileKind);
+	if (def == NULL)
+		return false;
+	Tile *tileAtPos = getTile(world, position.x, position.y);
+	if (tileAtPos == NULL || tileAtPos->kind != TILE_NONE)
+		return false;
+	return true;
+}
+int canPlaceMultiTile(World *world, Vector2Int originPosition, TileKind tileKind)
+{
+	Vector2Int tileSize = getTileSize(tileKind);
+	originPosition = vecSubI(originPosition, getTileOriginOffset(tileKind));
+	for (int x = 0; x < tileSize.x; x++)
+	{
+		for (int y = 0; y < tileSize.y; y++)
+		{
+			Vector2Int position = vecAddI(originPosition, (Vector2Int){x, y});
+			Tile *tileAtPos = getTile(world, position.x, position.y);
+			if (tileAtPos == NULL || tileAtPos->kind != TILE_NONE)
+				return false;
+		}
+	}
+	return true;
+}
+int placeTile(World *world, Vector2Int originPosition, Direction dir, TileKind tileKind)
+{
+
+	Vector2Int tileSize = getTileSize(tileKind);
+	if (canPlaceMultiTile(world, originPosition, tileKind) == false)
+		return -1;
+	originPosition = vecSubI(originPosition, getTileOriginOffset(tileKind));
+	int originID = -1;
+	for (int x = 0; x < tileSize.x; x++)
+	{
+		for (int y = 0; y < tileSize.y; y++)
+		{
+			Vector2Int position = vecAddI(originPosition, (Vector2Int){x, y});
+			int chunkLocalX = position.x & (CHUNK_SIZE - 1);
+			if (position.x < 0)
+				position.x -= CHUNK_SIZE - 1;
+			int chunkX = position.x / CHUNK_SIZE;
+
+			int chunkLocalY = position.y & (CHUNK_SIZE - 1);
+			if (position.y < 0)
+				position.y -= CHUNK_SIZE - 1;
+			int chunkY = position.y / CHUNK_SIZE;
+			Tile *oldTile = getChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY);
+			if (oldTile->kind != TILE_NONE && oldTile->isFunctional)
+				destroyFunctionTile(&world->tileHandler, oldTile->entity.instanceID);
+			Tile tile;
+			if (getTileDefinition(tileKind)->isFunctional)
+			{
+				if (x == 0 && y == 0)
+				{
+					tile = createFunctionTile(&world->tileHandler, tileKind, originPosition, dir, NULL);
+					originID = tile.entity.instanceID;
+				}
+				else
+				{
+					tile = createMultiTile(&world->tileHandler, tileKind, (Vector2Int){x, y}, dir, originID);
+				}
+			}
+
+			setChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, tile);
+		}
+	}
+	return 0;
+}
+void removeTile(World *world, Vector2Int deletePosition)
+{
+
+	Tile *tile = getTile(world, deletePosition.x, deletePosition.y);
+	if (tile == NULL || tile->kind == TILE_NONE)
+		return;
+
+	Vector2Int originPosition = tile->pos;
+	if (tile->isFunctional)
+	{
+		originPosition = worldTileOriginPosFromId(world, tile->entity.instanceID);
+		destroyFunctionTile(&world->tileHandler, tile->entity.instanceID);
+	}
+	TileDefinition *def = getTileDefinition(tile->kind);
+	Vector2Int tileSize = def->size;
+	for (int x = 0; x < tileSize.x; x++)
+	{
+		for (int y = 0; y < tileSize.y; y++)
+		{
+			Vector2Int position = vecAddI(originPosition, (Vector2Int){x, y});
+			int chunkLocalX = position.x & (CHUNK_SIZE - 1);
+			if (position.x < 0)
+				position.x -= CHUNK_SIZE - 1;
+			int chunkX = position.x / CHUNK_SIZE;
+
+			int chunkLocalY = position.y & (CHUNK_SIZE - 1);
+			if (position.y < 0)
+				position.y -= CHUNK_SIZE - 1;
+			int chunkY = position.y / CHUNK_SIZE;
+			Tile noTile = {
+				.kind = TILE_NONE,
+				.isFunctional = false,
+			};
+			setChunkTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, noTile);
+		}
+	}
+}
+GroundTile *getGroundTile(World *world, int x, int y)
+{
+	int chunkLocalX = ((x % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
+	if (x < 0)
+		x -= CHUNK_SIZE - 1;
+	int chunkX = x / CHUNK_SIZE;
+
+	int chunkLocalY = ((y % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
+	if (y < 0)
+		y -= CHUNK_SIZE - 1;
+	int chunkY = y / CHUNK_SIZE;
+
+	Chunk *chunk = getChunk(world, chunkX, chunkY);
+	if (chunk == NULL)
+		return NULL;
+	return getChunkGroundTile(chunk, chunkLocalX, chunkLocalY);
+}
+
+void setGroundTile(World *world, int x, int y, GroundTile *tile)
+{
+	int chunkX = x / CHUNK_SIZE;
+	int chunkY = y / CHUNK_SIZE;
+	int chunkLocalX = x - chunkX;
+	int chunkLocalY = y - chunkY;
+	setChunkGroundTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, *tile);
 }

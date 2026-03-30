@@ -1,10 +1,18 @@
-input
+ground tiles
 
-chuking / worldgeneration
 building
 
 multichar sprite rendering
 
+tiles can have function instead of static sprites
+
+chunk rendering 
 new worldgeneration algorithm
+
+
+UI/interaction (building/placing)
+
+gameplay
+
 
 zoom

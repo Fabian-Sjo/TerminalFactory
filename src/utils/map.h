@@ -1,11 +1,16 @@
+#ifndef MAP_H
+#define MAP_H
 typedef struct Map Map;
+
+int mapGetSize(Map *map);
 
 Map *mapCreate(unsigned long size);
 
-int mapAdd(Map *map, long key, void *value);
+int mapAdd(Map *map, unsigned long long key, void *value);
 
-void *mapGet(Map *map, long key);
+void *mapGet(Map *map, unsigned long long key);
 
-void *mapRemove(Map *map, long key);
+void *mapRemove(Map *map, unsigned long long key);
 
 int mapDestroy(Map *map);
+#endif

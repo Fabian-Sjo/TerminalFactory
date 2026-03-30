@@ -6,3 +6,15 @@ vc140.pdb
 .vs/TerminalFactory.slnx/FileContentIndex/9b66de4c-362a-4731-8977-3c1fe7c9b054.vsidx
 .vs/TerminalFactory.slnx/v18/.wsuo
 .vs/TerminalFactory.slnx/v18/DocumentLayout.json
+build.bat
+cFiles.bash
+makefile
+vc140.pdb
+test/*
+makefile
+build.bat
+cFiles.bash
+test/**
+**/*.pdb
+.vs/*
+helpStuffs/*.exe

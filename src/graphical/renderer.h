@@ -1,17 +1,13 @@
-#ifndef RENDERER
-#define RENDERER
+#ifndef RENDERER_H
+#define RENDERER_H
 
 #include "sprite.h"
+#include "canvas.h"
+
+#include "..\utils\vector2.h"
 
 
+void rendererDrawCanvas(Canvas *canvas);
+void rendererFlush();
 
-		
-void addStrToBuffer(char *str);
-void addCharToBuffer(char c);
-void addSpriteToBuffer(SpriteID sprite);
-
-void setColorFore(Color colorForeground);
-void setColorBack(Color colorBackground);
-void flush();
-void newLine();
 #endif

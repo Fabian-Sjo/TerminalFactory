@@ -1,7 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
+
 #include "sprite.h"
 #include "color.h"
+#include "renderer.h"
+#include "canvas.h"
+#include "../settings.h"
+#include "../terminal/terminal.h"
 
 char *buffer = NULL;
 int nrOfElements = 0;
@@ -14,8 +19,6 @@ void newLine();
 
 void addCharToBuffer(char c);
 
-void addSpriteToBuffer(SpriteID spriteId);
-
 void addStrToBuffer(char *str);
 
 void setColorFore(Color colorForeground);
@@ -26,9 +29,9 @@ void flush();
 
 void newLine()
 {
-	*(buffer + nrOfElements * sizeof(buffer[0])) = *"\n";
-	nrOfElements++;
+	addCharToBuffer('\n');
 }
+
 void addCharToBuffer(char c)
 {
 	if (bufferSize - 3 <= nrOfElements)
@@ -47,26 +50,39 @@ void addCharToBuffer(char c)
 
 	*(buffer + (nrOfElements + 1)) = '\0'; // Add null terminator
 }
-void addSpriteToBuffer(SpriteID spriteId)
+void addSpriteToBuffer(Sprite sprite)
+{
+	if (!colorEquals(sprite.colorFore, currentForeColor) && !colorEquals(sprite.colorFore, COLOR_TRANSPARENT))
+	{
+		setColorFore((sprite.colorFore));
+	}
+	if (!colorEquals(sprite.colorBack, currentBackColor) && !colorEquals(sprite.colorBack, COLOR_TRANSPARENT))
+	{
+		setColorBack((sprite.colorBack));
+	}
+	char c = sprite.icon;
+	if (c == '\0')
+		c = ' ';
+	addCharToBuffer(c);
+	if (settingDoHorisontalSpacing)
+		addCharToBuffer(' ');
+}
+void rendererDrawCanvas(Canvas *canvas)
+{
+	for (int y = 0; y < canvasGetSize(canvas).y; y++)
+	{
+		for (int x = 0; x < canvasGetSize(canvas).x; x++)
+		{
+			addSpriteToBuffer(canvasGetSprite(canvas, (Vector2Int){x, y}));
+		}
+		newLine();
+	}
+}
+void addSpriteIdToBuffer(SpriteID spriteId)
 {
 	Sprite *sprite = getSprite(spriteId);
-	if (
-		currentForeColor.R != (sprite->colorFore.R) ||
-		currentForeColor.G != (sprite->colorFore.G) ||
-		currentForeColor.B != (sprite->colorFore.B))
-	{
-		setColorFore((sprite->colorFore));
-	}
-	if (
-		currentBackColor.R != (sprite->colorBack.R) ||
-		currentBackColor.G != (sprite->colorBack.G) ||
-		currentBackColor.B != (sprite->colorBack.B))
-	{
-		setColorBack((sprite->colorBack));
-	}
-	addCharToBuffer(sprite->icon);
+	addSpriteToBuffer(*sprite);
 }
-
 void addStrToBuffer(char *str)
 {
 	while (*str)
@@ -93,16 +109,21 @@ void setColorBack(Color colorBackground)
 void updateColor()
 {
 	char strColor[48];
-	//snprintf(strColor, sizeof(strColor), "\033[0m");
-	snprintf(strColor, sizeof(strColor), "\033[38;2;%d;%d;%dm",currentForeColor.R,currentForeColor.G,currentForeColor.B);
+	// snprintf(strColor, sizeof(strColor), "\033[0m");
+	snprintf(strColor, sizeof(strColor), "\033[38;2;%d;%d;%dm", currentForeColor.R, currentForeColor.G, currentForeColor.B);
 	addStrToBuffer(strColor);
-	snprintf(strColor, sizeof(strColor), "\033[48;2;%d;%d;%dm",currentBackColor.R,currentBackColor.G,currentBackColor.B);
+	snprintf(strColor, sizeof(strColor), "\033[48;2;%d;%d;%dm", currentBackColor.R, currentBackColor.G, currentBackColor.B);
 	addStrToBuffer(strColor);
 }
-void flush()
+void rendererFlush()
 {
-	fflush(stdout);
-	printf(buffer);
-	fflush(stdout);
+
+	// fflush(stdout);
+	// printf(buffer);
+	terminalSetCursorPos((Vector2Int){0, 0});
+	terminalDrawText(buffer);
+	// printf("\033[0m"); // reset ansi
+	// fflush(stdout);
 	nrOfElements = 0;
+	updateColor();
 }
