@@ -227,9 +227,9 @@ void tickPlayer(double deltaTime, GameData gameData)
 }
 void start()
 {
+	player = playerNew();
 	printf("\033[2J");	// clear terminal
 	printf("\33[?25l"); // reset ansi
-	player = playerNew();
 	World *world = createWorld();
 	gameData.activeWorld = world;
 	gameData.canvas = canvasNew((Vector2Int){30, 30});
@@ -261,7 +261,6 @@ void stop()
 
 int main()
 {
-
 	// has to be power of 2
 	// assert(CHUNK_SIZE && !(CHUNK_SIZE & (CHUNK_SIZE - 1)));
 
