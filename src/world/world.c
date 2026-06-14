@@ -207,6 +207,7 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 	}
 }
 
+//returns Tile at position, or NULL if out of bounds or chunk not generated
 Tile *getTile(World *world, int x, int y)
 {
 	int chunkLocalX = x & (CHUNK_SIZE - 1);
