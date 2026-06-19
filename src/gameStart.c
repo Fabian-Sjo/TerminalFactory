@@ -1,7 +1,7 @@
 #include "utils/systemIndependant.h"
 #include "utils/perlin.h"
 #include "utils/map.h"
-
+#include "gameStart.h"
 #include "terminal/terminal.h"
 
 #include "graphical/renderer.h"
@@ -259,7 +259,7 @@ void stop()
 	fflush(stdout);
 }
 
-int main()
+void gameInit()
 {
 	// has to be power of 2
 	// assert(CHUNK_SIZE && !(CHUNK_SIZE & (CHUNK_SIZE - 1)));
@@ -272,10 +272,10 @@ int main()
 
 	addFunctionStop(&stop);
 
-	setFps(200);
+	setFps(60);
 	startGame();
 
-	return 0;
+	return;
 }
 /*
 	  > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > -
