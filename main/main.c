@@ -14,6 +14,7 @@
 #include "../src/gameData.h"
 #include "../src/settings.h"
 #include "../src/world/chunkGenerator.h"
+#include "../src/world/pathFinder.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -55,10 +56,12 @@ void debugInfo(double deltaTime, GameData *gameData)
 	printf("delta time: %10fs FPS: %3f\n nrOfChunks: %d\n", deltaTime, (1.0 / deltaTime), nrOfChunks(gameData->activeWorld));
 	printf("Frame: %d  ", gameData->frame++);
 	printf("Pos x: %-3f Pos y: %-3f", player->position.x, player->position.y);
-	printf("placeDir %d", placeDirection);
+	printf("placeDir %d\n", placeDirection);
+
 	// KeyEvent keyEvent = gameData->keyevent;
 	// printf("pressed: %-10s released: %-10s held: %-10s \n", keyToString(keyEvent.pressed), keyToString(keyEvent.released), keyToString(keyEvent.held));
 }
+
 void redrawCanvasAndGui(GameData *gameData)
 {
 	printf("\033[2J\033[H");
@@ -106,6 +109,14 @@ Vector2Int screenToWorld(Vector2Int screen)
 {
 
 	return vecAddI((Vector2Int){-1, -1}, vecAddI(vecSubI(screen, vecDivI(gameData.screenSize, (Vector2Int){2, 2})), vecRound(player->position)));
+}
+Vector2Int worldToScreen(Vector2Int world)
+{
+	return vecAddI(
+		vecAddI(
+			world,
+			vecDivI(gameData.screenSize, (Vector2Int){2, 2})),
+		vecSubI((Vector2Int){1, 1}, vecRound(player->position)));
 }
 void render(double deltaTime, GameData *gameData)
 {
@@ -161,7 +172,26 @@ void render(double deltaTime, GameData *gameData)
 			}
 		}
 	}
+	Vector2Int middleOfCam = vecAddI(
+		(Vector2Int){(int)player->position.x, (int)player->position.y},
+			(Vector2Int){0, 0});
+	Path path = getPath(middleOfCam, screenToWorld(cursorPos), gameData->activeWorld);
+	printf("length: %d result: %d\n", path.length, path.result);
+	if (path.length > 0)
+	{
 
+		for (size_t i = 0; i < path.length; i++)
+		{
+			Vector2Int point = path.points[i];
+			Sprite sprite = (Sprite){.icon = '%', COLOR_WHITE, COLOR_BLACK};
+			canvasSetSprite(gameData->canvas, worldToScreen(point), sprite);
+			// printf("point %d : {%d, %d}\n", i, point.x, point.y);
+		}
+	}
+	Sprite sprite = (Sprite){.icon = '%', COLOR_WHITE, COLOR_BLACK};
+	canvasSetSprite(gameData->canvas, worldToScreen(middleOfCam), sprite);
+	if (path.points != NULL)
+		free(path.points);
 	terminalSetCursorPos((Vector2Int){0, 0});
 	rendererDrawCanvas(gameData->canvas);
 	rendererFlush();

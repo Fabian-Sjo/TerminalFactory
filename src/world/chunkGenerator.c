@@ -58,14 +58,17 @@ Chunk generateMoonChunk(Vector2Int chunkCoordinate)
 			double perlinValue = getPerlinValue(globalPos);
 
 			int random = ((int)(perlinValue * 100) ^ (int)(perlinValue * 1000)) % 100;
-			
+
 			Vector2Float normal = sobelFilter(&getPerlinValue, globalPos);
 			double direction = atan2(normal.y, normal.x);
 			direction = ((direction / 3.14159) + 1) / 2; // 0 to 1
-			
+
 			Tile tile = (Tile){.kind = TILE_NONE, .isFunctional = false, .pos = globalPos};
 			double magnitude = sqrt(normal.x * normal.x + normal.y * normal.y);
-			if(magnitude < 0.06)
+			if (abs(globalPos.x) + abs(globalPos.y) < 10)
+				magnitude++;
+
+			if (magnitude < 0.06)
 			{
 				tile.kind = TILE_ROCK;
 				tile.sprite.icon = 'O';
@@ -74,32 +77,32 @@ Chunk generateMoonChunk(Vector2Int chunkCoordinate)
 			{
 				tile.kind = TILE_ROCK;
 				if (direction < 0.1)
-				tile.sprite.icon = '|';
+					tile.sprite.icon = '|';
 				else if (direction < 0.125)
-				tile.sprite.icon = '/';
+					tile.sprite.icon = '/';
 				else if (direction < 0.325)
-				tile.sprite.icon = '-';
+					tile.sprite.icon = '-';
 				else if (direction < 0.425)
-				tile.sprite.icon = '\\';
+					tile.sprite.icon = '\\';
 				else if (direction < 0.625)
-				tile.sprite.icon = '|';
+					tile.sprite.icon = '|';
 				else if (direction < 0.675)
-				tile.sprite.icon = '/';
+					tile.sprite.icon = '/';
 				else if (direction < 0.825)
-				tile.sprite.icon = '-';
+					tile.sprite.icon = '-';
 				else if (direction < 0.925)
-				tile.sprite.icon = '\\';
+					tile.sprite.icon = '\\';
 				else
-				tile.sprite.icon = '|';
+					tile.sprite.icon = '|';
 			}
 			int colorValue = fabs(getPerlinValue(globalPos)) * 100;
 			if (colorValue > 254)
-			colorValue = 254;
-			
+				colorValue = 254;
+
 			setChunkTile(&chunk, x, y, tile);
-			
+
 			GroundTile groundTile = (GroundTile){.sprite = {' ', COLOR_BLACK_CONST, {0, 0, 0}}};
-			if(random < 5)
+			if (random < 5)
 			{
 				groundTile.sprite.icon = '.';
 			}

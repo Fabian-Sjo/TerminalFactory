@@ -352,9 +352,14 @@ GroundTile *getGroundTile(World *world, int x, int y)
 
 void setGroundTile(World *world, int x, int y, GroundTile *tile)
 {
+	int chunkLocalX = x & (CHUNK_SIZE - 1);
+	if (x < 0)
+		x -= CHUNK_SIZE - 1;
 	int chunkX = x / CHUNK_SIZE;
+
+	int chunkLocalY = y & (CHUNK_SIZE - 1);
+	if (y < 0)
+		y -= CHUNK_SIZE - 1;
 	int chunkY = y / CHUNK_SIZE;
-	int chunkLocalX = x - chunkX;
-	int chunkLocalY = y - chunkY;
 	setChunkGroundTile(getChunk(world, chunkX, chunkY), chunkLocalX, chunkLocalY, *tile);
 }
