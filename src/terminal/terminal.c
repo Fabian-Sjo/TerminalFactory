@@ -125,13 +125,23 @@ void poolInput()
 	int nrOfEvents;
 	GetNumberOfConsoleInputEvents(stdInHandle, &nrOfEvents);
 
-	if (nrOfEvents == 0)
-		return;
-	ReadConsoleInput(stdInHandle, &rec, 1, &read);
-	if (rec.EventType == MOUSE_EVENT)
+	DWORD numEvents;
+	GetNumberOfConsoleInputEvents(stdInHandle, &numEvents);
+
+	while (numEvents > 0)
 	{
-		mousePos = (Vector2Int){rec.Event.MouseEvent.dwMousePosition.X,
-								rec.Event.MouseEvent.dwMousePosition.Y};
+		INPUT_RECORD rec;
+		DWORD read;
+
+		ReadConsoleInput(stdInHandle, &rec, 1, &read);
+
+		if (rec.EventType == MOUSE_EVENT)
+		{
+			mousePos = (Vector2Int){rec.Event.MouseEvent.dwMousePosition.X,
+									rec.Event.MouseEvent.dwMousePosition.Y};
+		}
+
+		GetNumberOfConsoleInputEvents(stdInHandle, &numEvents);
 	}
 }
 KeyState terminalGetKeyState(Key key)

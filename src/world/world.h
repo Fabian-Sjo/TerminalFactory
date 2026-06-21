@@ -5,6 +5,7 @@
 #include "groundTile.h"
 #include "../utils/vector2.h"
 #include "../graphical/renderer.h"
+#include "chunk.h"
 
 typedef struct World World;
 
@@ -15,7 +16,7 @@ void *worldTileFromInstanceID(World *world, int instanceID);
 Vector2Int worldTileOriginPosFromId(World *world, int instanceID);
 Direction worldTileDirFromId(World *world, int instanceID);
 int chunkIsGenerated(World *world, int x, int y);
-void generateChunk(World *world, int x, int y);
+void generateChunk(World *world, int x, int y, Chunk generatorFunc(Vector2Int chunkCoords));
 
 int nrOfChunks(World *world);
 
@@ -32,6 +33,5 @@ void setGroundTile(World *world, int x, int y, GroundTile tile);
 
 int canPlaceTile(World *world, Vector2Int position, TileKind tileKind);
 int canPlaceMultiTile(World *world, Vector2Int position, TileKind tileKind);
-
 
 #endif

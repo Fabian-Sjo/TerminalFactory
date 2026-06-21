@@ -15,17 +15,21 @@ DynamicArray *dynamicArrayCreate(int dataSize, int initialSize)
 		   "malloc.\n");
 	return array;
 }
-void DynamicArrayDestroy(DynamicArray *array)
+int dynamicArrayDestroy(DynamicArray *array)
 {
+	if (array == NULL)
+		return -1;
 	free(array->elements);
 	free(array);
-}
+	return 0;
+};
 int dynamicArrayAdd(DynamicArray *array, void *element)
 {
 
 	if (array->numberOfElements == array->capacity)
 	{
-		array->elements = realloc(array->elements, (array->numberOfElements + 32) * array->dataSize);
+		array->capacity += 32;
+		array->elements = realloc(array->elements, array->capacity * array->dataSize);
 	}
 	void *destination = (char *)array->elements + array->numberOfElements * array->dataSize;
 
@@ -42,8 +46,11 @@ int dynamicArraySet(DynamicArray *array, int index, void *element)
 	}
 	void *destination = (char *)array->elements + index * array->dataSize;
 
-	memcpy(destination, element, array->dataSize);
-	return 0;
+	return memcpy_s(
+		destination,
+		array->dataSize,
+		element,
+		array->dataSize);
 }
 
 void *dynamicArrayGet(DynamicArray *array, int index)
@@ -226,7 +233,29 @@ int linkedListdeleteAtPosition(LinkedList *linkedList, int position)
 	linkedList->nrOfElements--;
 	return 0;
 }
-
+void *linkedListToArray(LinkedList *linkedList)
+{
+	if (!linkedList)
+		return NULL;
+	if (linkedList->nrOfElements == 0)
+		return NULL;
+	size_t totalSize =
+		(size_t)linkedList->dataSize *
+		(size_t)linkedList->nrOfElements;
+	void *array = malloc(totalSize);
+	if (!array)
+		return NULL;
+	struct Node *current = linkedList->head;
+	int i = 0;
+	while (current != NULL)
+	{
+		char *dest = (char *)array + linkedList->dataSize * i++;
+		char *src = (char *)current + sizeof(struct Node);
+		memcpy(dest, src, linkedList->dataSize);
+		current = current->next;
+	}
+	return array;
+}
 // Function to print the LinkedList
 void linkedListprint(LinkedList *linkedList)
 {

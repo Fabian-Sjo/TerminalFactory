@@ -19,11 +19,22 @@ function filterFile(file) {
 		return false
 	return true
 }
+function isInDirectory(filePath, directoryPath) {
+	const file = path.resolve(filePath);
+	const dir = path.resolve(directoryPath);
 
+	const relative = path.relative(dir, file);
+
+	return relative &&
+		!relative.startsWith('..') &&
+		!path.isAbsolute(relative);
+}
 function getFiles(workingDir, openFile) {
 	let sourceDir = `${workingDir}\\src`
 	let mainFile = `${workingDir}\\main\\main.c`;
-
+	if (!isInDirectory(openFile, sourceDir))
+		mainFile = openFile;
+	
 	return getCFiles(sourceDir).concat([mainFile])
 }
 function getCFiles(pathStart) {
@@ -45,15 +56,16 @@ function getCFiles(pathStart) {
 	}
 	return files;
 }
-
-let fileString = getFiles(workspaceFolder, openFile).reduce((string, item) => `${string} ${item}`)
+let files = getFiles(workspaceFolder, openFile)
+let fileString = files.reduce((string, item) => `${string} ${item}`)
 let command;
 
-console.log("Building FULL project (main.c)");
-
+console.log("Building FULL project");
+console.log("Main file:"+files[files.length - 1]);
+console.log("\n\n\n\n");
 command = `cl.exe /Zi /Od /W3 /EHsc /std:c11 /Foout\\ /Feout\\program.exe ` +
 	fileString
 
 
 console.log(command);
-execSync(command, { stdio: "inherit" });
+setTimeout((() => execSync(command, { stdio: "inherit" })), 0);

@@ -11,6 +11,7 @@ struct DynamicArray
 };
 
 DynamicArray *dynamicArrayCreate(int dataSize, int initialSize);
+int dynamicArrayDestroy(DynamicArray *array);
 
 int dynamicArrayAdd(DynamicArray *array, void *element);
 
@@ -44,7 +45,7 @@ int linkedListdeleteFromEnd(LinkedList *linkedList);
 
 // Function to delete a node at a specific position in the singly linked list
 int linkedListdeleteAtPosition(LinkedList *linkedList, int position);
-
+void *linkedListToArray(LinkedList *linkedList);
 // Function to print the LinkedList
 void linkedListprint(LinkedList *linkedList);
 #endif

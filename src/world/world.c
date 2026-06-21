@@ -107,13 +107,13 @@ int chunkIsGenerated(World *world, int chunkX, int chunkY)
 	return (getChunk(world, chunkX, chunkY) != NULL);
 }
 
-void generateChunk(World *world, int globalX, int globalY)
+void generateChunk(World *world, int globalX, int globalY, Chunk generatorFunc(Vector2Int chunkCoords))
 {
 	Vector2Int chunkCoords = (Vector2Int){globalX / CHUNK_SIZE, globalY / CHUNK_SIZE};
 	if (chunkIsGenerated(world, chunkCoords.x, chunkCoords.y))
 		return;
 	Chunk *chunk = malloc(sizeof(Chunk));
-	*chunk = generateMoonChunk(
+	*chunk = generatorFunc(
 		(Vector2Int){chunkCoords.x, chunkCoords.y});
 
 	setChunk(world, chunkCoords.x, chunkCoords.y, chunk);
@@ -176,7 +176,7 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 					int globalX = chunkWorldX + localX;
 					int globalY = chunkWorldY + localY;
 
-					Sprite sprite = {' ', COLOR_BLACK};
+					Sprite sprite = {'-', COLOR_RED, COLOR_RED};
 
 					if (chunk)
 					{
@@ -207,7 +207,7 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 	}
 }
 
-//returns Tile at position, or NULL if out of bounds or chunk not generated
+// returns Tile at position, or NULL if out of bounds or chunk not generated
 Tile *getTile(World *world, int x, int y)
 {
 	int chunkLocalX = x & (CHUNK_SIZE - 1);
