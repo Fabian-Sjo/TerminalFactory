@@ -5,7 +5,7 @@
 #include "pathFinder.h"
 #include "../utils/ADT.h"
 
-#define MAX_SEARCH_RADIUS 20
+#define MAX_SEARCH_RADIUS 40
 #define ROW (MAX_SEARCH_RADIUS * 2 + 1)
 #define COL (MAX_SEARCH_RADIUS * 2 + 1)
 #define ALLOW_CORNER_CUTTING false
@@ -84,8 +84,7 @@ static int isDestination(Vector2Int src,
 		   src.y == dest.y;
 }
 
-static double calculateHValue(Vector2Int src,
-							  Vector2Int dest)
+static double calculateHValue(Vector2Int src, Vector2Int dest)
 {
 	double dx = src.x - dest.x;
 	double dy = src.y - dest.y;
@@ -93,19 +92,11 @@ static double calculateHValue(Vector2Int src,
 	return sqrt(dx * dx + dy * dy);
 }
 
-static Path tracePath(Node nodeDetails[][COL],
-					  Vector2Int dest)
+static PathFinderPath tracePath(Node nodeDetails[][COL], enum PathFinderResult result,
+								Vector2Int dest)
 {
-	Vector2Int *pathPoints =
-		malloc(ROW * COL * sizeof(Vector2Int));
 
-	if (pathPoints == NULL)
-	{
-		return (Path){
-			.length = -1,
-			.points = NULL,
-			.result = PATHFINDER_ERROR};
-	}
+	Vector2Int pathPoints[ROW * COL];
 
 	int count = 0;
 
@@ -114,9 +105,8 @@ static Path tracePath(Node nodeDetails[][COL],
 
 	if (!isInBounds((Vector2Int){row, col}))
 	{
-		free(pathPoints);
 
-		return (Path){
+		return (PathFinderPath){
 			.length = -1,
 			.points = NULL,
 			.result = PATHFINDER_ERROR};
@@ -129,9 +119,7 @@ static Path tracePath(Node nodeDetails[][COL],
 		{
 			printf("TRACE PATH OVERFLOW\n");
 
-			free(pathPoints);
-
-			return (Path){
+			return (PathFinderPath){
 				.length = -1,
 				.points = NULL,
 				.result = PATHFINDER_ERROR};
@@ -152,10 +140,7 @@ static Path tracePath(Node nodeDetails[][COL],
 				parentCol}))
 		{
 			printf("INVALID PARENT NODE\n");
-
-			free(pathPoints);
-
-			return (Path){
+			return (PathFinderPath){
 				.length = -1,
 				.points = NULL,
 				.result = PATHFINDER_ERROR};
@@ -169,7 +154,7 @@ static Path tracePath(Node nodeDetails[][COL],
 	{
 		free(pathPoints);
 
-		return (Path){
+		return (PathFinderPath){
 			.length = -1,
 			.points = NULL,
 			.result = PATHFINDER_ERROR};
@@ -179,29 +164,41 @@ static Path tracePath(Node nodeDetails[][COL],
 	pathPoints[count].y = col;
 	count++;
 
-	return (Path){
+	Vector2Int *revesedPoints = malloc(count * sizeof(Vector2Int));
+	if (revesedPoints == NULL)
+	{
+		return (PathFinderPath){.length = -1, .points = NULL, .result = PATHFINDER_ERROR};
+	}
+	for (size_t i = 0; i < count; i++)
+	{
+		revesedPoints[i] = pathPoints[count - i - 1];
+	}
+
+	return (PathFinderPath){
 		.length = count,
-		.points = pathPoints,
-		.result = PATHFINDER_SUCCESS};
+		.points = revesedPoints,
+		.result = result};
 }
 
-Path aStarSearch(int grid[][COL],
-				 Vector2Int src,
-				 Vector2Int dest)
+PathFinderPath aStarSearch(int grid[][COL],
+						   Vector2Int src,
+						   Vector2Int dest)
 {
-	if (!isInBounds(src) ||
-		!isInBounds(dest))
+	if (!isInBounds(src)
+		//||!isInBounds(dest)
+	)
 	{
-		return (Path){
+		return (PathFinderPath){
 			.length = -1,
 			.points = NULL,
 			.result = PATHFINDER_ERROR};
 	}
 
-	if (!isUnBlocked(grid, src) ||
-		!isUnBlocked(grid, dest))
+	if (!isUnBlocked(grid, src)
+		//	||!isUnBlocked(grid, dest)
+	)
 	{
-		return (Path){
+		return (PathFinderPath){
 			.length = -1,
 			.points = NULL,
 			.result = PATHFINDER_ERROR};
@@ -209,7 +206,7 @@ Path aStarSearch(int grid[][COL],
 
 	if (isDestination(src, dest))
 	{
-		return (Path){
+		return (PathFinderPath){
 			.length = 0,
 			.points = NULL,
 			.result = PATHFINDER_SUCCESS};
@@ -248,6 +245,9 @@ Path aStarSearch(int grid[][COL],
 	int colOffset[4] =
 		{0, -1, 0, 1};
 
+	Vector2Int closestNode = src;
+	double closestH = calculateHValue(src, dest);
+
 	while (openSize > 0)
 	{
 		double minF = DBL_MAX;
@@ -267,7 +267,7 @@ Path aStarSearch(int grid[][COL],
 
 		if (minIndex == -1)
 		{
-			return (Path){
+			return (PathFinderPath){
 				.length = -1,
 				.points = NULL,
 				.result = PATHFINDER_ERROR};
@@ -299,7 +299,7 @@ Path aStarSearch(int grid[][COL],
 				nodeDetails[newPos.x][newPos.y].parent_x = row;
 				nodeDetails[newPos.x][newPos.y].parent_y = col;
 
-				return tracePath(nodeDetails, dest);
+				return tracePath(nodeDetails, PATHFINDER_SUCCESS, dest);
 			}
 
 			if (closedList[newPos.x][newPos.y])
@@ -308,14 +308,15 @@ Path aStarSearch(int grid[][COL],
 			if (!isUnBlocked(grid, newPos))
 				continue;
 
-			double gNew =
-				nodeDetails[row][col].g + 1.0;
+			double gNew = nodeDetails[row][col].g + 1.0;
 
-			double hNew =
-				calculateHValue(newPos, dest);
-
-			double fNew =
-				gNew + hNew;
+			double hNew = calculateHValue(newPos, dest);
+			if (hNew < closestH)
+			{
+				closestH = hNew;
+				closestNode = newPos;
+			}
+			double fNew = gNew + hNew;
 
 			if (fNew < nodeDetails[newPos.x][newPos.y].f)
 			{
@@ -334,7 +335,7 @@ Path aStarSearch(int grid[][COL],
 					{
 						printf("OPEN LIST OVERFLOW\n");
 
-						return (Path){
+						return (PathFinderPath){
 							.length = -1,
 							.points = NULL,
 							.result = PATHFINDER_ERROR};
@@ -347,15 +348,12 @@ Path aStarSearch(int grid[][COL],
 		}
 	}
 
-	return (Path){
-		.length = -1,
-		.points = NULL,
-		.result = PATHFINDER_ERROR};
+	return tracePath(nodeDetails, PATHFINDER_PARTIAL_PATH, closestNode);
 }
 
-Path getPath(Vector2Int start,
-			 Vector2Int end,
-			 World *world)
+PathFinderPath getPath(Vector2Int start,
+					   Vector2Int end,
+					   World *world)
 {
 	TRAVERSE_TYPE navGrid[ROW][COL];
 
@@ -370,8 +368,8 @@ Path getPath(Vector2Int start,
 
 			navGrid[row][col] = TRAVERSE_OPEN;
 
-			if (tile == NULL ||
-				tile->kind != TILE_NONE)
+			if (!isTileWalkable(world, (Vector2Int){start.x + row - MAX_SEARCH_RADIUS,
+												   start.y + col - MAX_SEARCH_RADIUS}))
 			{
 				navGrid[row][col] = TRAVERSE_BLOCKED;
 			}
@@ -386,12 +384,12 @@ Path getPath(Vector2Int start,
 	Vector2Int localEnd =
 		worldToLocal(start, end);
 
-	Path path =
+	PathFinderPath path =
 		aStarSearch(navGrid,
 					localStart,
 					localEnd);
 
-	if (path.result == PATHFINDER_SUCCESS)
+	if (path.result != PATHFINDER_ERROR && path.length > 0)
 	{
 		for (int i = 0; i < path.length; i++)
 		{

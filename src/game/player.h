@@ -7,6 +7,8 @@ typedef struct Player
 	Vector2Float position;
 	float speed;
 } Player;
+
+
 void tick(long deltaTime);
 
 Player *playerNew();

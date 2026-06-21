@@ -225,6 +225,16 @@ Tile *getTile(World *world, int x, int y)
 		return NULL;
 	return getChunkTile(chunk, chunkLocalX, chunkLocalY);
 }
+bool isTileWalkable(World *world, Vector2Int pos)
+{
+	Tile *tile = getTile(world, pos.x, pos.y);
+	if (tile == NULL)
+		return false;
+
+	if (tile->kind != TILE_NONE)
+		return false;
+	return true;
+}
 int canPlaceTile(World *world, Vector2Int position, TileKind tileKind)
 {
 	TileDefinition *def = getTileDefinition(tileKind);

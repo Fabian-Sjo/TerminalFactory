@@ -23,7 +23,7 @@ int nrOfChunks(World *world);
 void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int size, Vector2Int canvasPos, GameData *gameData);
 
 Tile *getTile(World *world, int x, int y);
-
+bool isTileWalkable(World *world, Vector2Int pos);
 GroundTile *getGroundTile(World *world, int x, int y);
 
 // returns 0 if successful, negative if failed

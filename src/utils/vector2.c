@@ -24,3 +24,11 @@ Vector2Int vecRound(Vector2Float vec)
 		(int)(vec.x + 0.5),
 		(int)(vec.y + 0.5)};
 }
+
+Vector2Int vecFloor(Vector2Float vec)
+{
+
+	return (Vector2Int){
+		vec.x < 0 ? (int)(vec.x + 1) : (int)(vec.x),
+		vec.y < 0 ? (int)(vec.y + 1) : (int)(vec.y)};
+}

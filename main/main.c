@@ -1,6 +1,7 @@
 #include "../src/utils/systemIndependant.h"
 #include "../src/utils/perlin.h"
 #include "../src/utils/map.h"
+#include "../src/utils/vector2.h"
 #include "../src/terminal/terminal.h"
 
 #include "../src/graphical/renderer.h"
@@ -18,6 +19,8 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 #include <signal.h>
 
 Vector2Int screenSafezone = {0, 10};
@@ -38,15 +41,34 @@ int borderSize = 1;
 //	World *activeWorld;
 //	Canvas *canvas;
 // } GameData;
+typedef struct Entity
+{
+	Vector2Int position;
+	PathFinderPath path;
+} Entity;
+
 GameData gameData;
 Player *player;
+Entity *testEntity;
 Vector2Int cursorPos;
 Direction placeDirection = DIR_NORTH;
 TileKind selectedTile = TILE_BELT;
 
 void render(double deltaTime, GameData *gameData);
 void tickPlayer(double deltaTime, GameData gameData);
+Vector2Int screenToWorld(Vector2Int screenPos)
+{
 
+	return (Vector2Int){
+		screenPos.x + floor(player->position.x) - gameData.screenSize.x / 2,
+		screenPos.y + floor(player->position.y) - gameData.screenSize.y / 2};
+}
+Vector2Int worldToScreen(Vector2Int worldPos)
+{
+	return (Vector2Int){
+		worldPos.x - floor(player->position.x) + gameData.screenSize.x / 2,
+		worldPos.y - floor(player->position.y) + gameData.screenSize.y / 2};
+}
 void debugInfo(double deltaTime, GameData *gameData)
 {
 
@@ -55,9 +77,18 @@ void debugInfo(double deltaTime, GameData *gameData)
 	printf("screen width: %d height:%d\n", gameData->screenSize.x, gameData->screenSize.y);
 	printf("delta time: %10fs FPS: %3f\n nrOfChunks: %d\n", deltaTime, (1.0 / deltaTime), nrOfChunks(gameData->activeWorld));
 	printf("Frame: %d  ", gameData->frame++);
-	printf("Pos x: %-3f Pos y: %-3f", player->position.x, player->position.y);
+	printf("Pos x: %-3f Pos y: %-3f\n", player->position.x, player->position.y);
+	printf("mouse: Pos x: %-3d Pos y: %-3d mouseWorld: Pos x: %-3d Pos y: %-3d\n", cursorPos.x, cursorPos.y, screenToWorld(cursorPos).x, screenToWorld(cursorPos).y);
 	printf("placeDir %d\n", placeDirection);
 
+	for (int i = -30; i < 30; i++)
+	{
+		Vector2Int p = {.x = i, .y = i};
+		Vector2Int toWorld = screenToWorld(p);
+		Vector2Int pp = worldToScreen(toWorld);
+		// assert(p.x == pp.x);
+		// assert(p.y == pp.y);
+	}
 	// KeyEvent keyEvent = gameData->keyevent;
 	// printf("pressed: %-10s released: %-10s held: %-10s \n", keyToString(keyEvent.pressed), keyToString(keyEvent.released), keyToString(keyEvent.held));
 }
@@ -84,6 +115,35 @@ void redrawCanvasAndGui(GameData *gameData)
 	// cavasDrawRectangle(canvas, (Vector2Int){8, 2}, (Vector2Int){5, 5}, (Sprite){'+'}, FILL_NONE);
 	// cavasDrawRectangle(canvas, (Vector2Int){20, 20}, (Vector2Int){5, 5}, (Sprite){'#'}, FILL_ALL);
 }
+void testPath(double deltaTime)
+{
+
+	printf("length: %d result: %d\n",
+		   testEntity->path.length,
+		   testEntity->path.result);
+	// printf("pos x: %f y: %f\n",
+	//	   testEntity->position.x,
+	//	   testEntity->position.y);
+	if (testEntity->path.result != PATHFINDER_ERROR && testEntity->path.length > 0)
+	{
+		for (size_t i = 0; i < testEntity->path.length; i++)
+		{
+			Vector2Int point = testEntity->path.points[i];
+			Sprite sprite = (Sprite){.icon = '.', COLOR_WHITE, COLOR_BLACK};
+			canvasSetSprite(gameData.canvas, worldToScreen(point), sprite);
+			// printf("{%d, %d}", point.x, point.y);
+		}
+
+		Vector2Int newPos = testEntity->path.points[1];
+
+		if (isTileWalkable(gameData.activeWorld, newPos))
+			testEntity->position = newPos;
+		Vector2Int oldTarget = testEntity->path.points[testEntity->path.length - 1];
+		if (testEntity->path.points != NULL)
+			free(testEntity->path.points);
+		testEntity->path = getPath(testEntity->position, oldTarget, gameData.activeWorld);
+	}
+}
 void loop(double deltaTime)
 {
 	// gameData.keyevent = getKeyEvent();
@@ -105,19 +165,7 @@ void loop(double deltaTime)
 			generateChunk(gameData.activeWorld, player->position.x + x * 8, player->position.y + y * 8, &generateMoonChunk);
 	}
 }
-Vector2Int screenToWorld(Vector2Int screen)
-{
 
-	return vecAddI((Vector2Int){-1, -1}, vecAddI(vecSubI(screen, vecDivI(gameData.screenSize, (Vector2Int){2, 2})), vecRound(player->position)));
-}
-Vector2Int worldToScreen(Vector2Int world)
-{
-	return vecAddI(
-		vecAddI(
-			world,
-			vecDivI(gameData.screenSize, (Vector2Int){2, 2})),
-		vecSubI((Vector2Int){1, 1}, vecRound(player->position)));
-}
 void render(double deltaTime, GameData *gameData)
 {
 	Vector2Int termsize = getTermSize();
@@ -127,13 +175,18 @@ void render(double deltaTime, GameData *gameData)
 		gameData->screenSize = termsize;
 		redrawCanvasAndGui(gameData);
 	}
-	Vector2Int actualScreenSize = vecSubI(gameData->screenSize, screenSafezone);
 	Vector2Int position = {
-		player->position.x - gameData->screenSize.x / 2,
-		player->position.y - gameData->screenSize.y / 2};
-
-	writeAreaToCanvas(gameData->activeWorld, gameData->canvas, position, (Vector2Int){gameData->screenSize.x - borderSize * 2, gameData->screenSize.y - borderSize * 2}, (Vector2Int){borderSize, borderSize}, gameData);
-
+		floor(player->position.x) - floor(gameData->screenSize.x / 2),
+		floor(player->position.y) - floor(gameData->screenSize.y / 2)};
+	//{
+	//	floor(player->position.x) - gameData->screenSize.x / 2,
+	//	floor(player->position.y) - gameData->screenSize.y / 2};
+	Vector2Int canvasSize = (Vector2Int){
+		gameData->screenSize.x - borderSize * 2,
+		gameData->screenSize.y - borderSize * 2};
+	Vector2Int borders = (Vector2Int){borderSize, borderSize};
+	writeAreaToCanvas(gameData->activeWorld, gameData->canvas, vecAddI(position, borders), canvasSize, borders, gameData);
+	testPath(deltaTime);
 	/*for (int x = -1; x <= 1; x++)
 	{
 		for (int y = -1; y <= 1; y++)
@@ -172,26 +225,9 @@ void render(double deltaTime, GameData *gameData)
 			}
 		}
 	}
-	Vector2Int middleOfCam = vecAddI(
-		(Vector2Int){(int)player->position.x, (int)player->position.y},
-			(Vector2Int){0, 0});
-	Path path = getPath(middleOfCam, screenToWorld(cursorPos), gameData->activeWorld);
-	printf("length: %d result: %d\n", path.length, path.result);
-	if (path.length > 0)
-	{
+	Sprite sprite = (Sprite){.icon = '@', (Color){100, 100, 0}, COLOR_BLACK};
+	canvasSetSprite(gameData->canvas, worldToScreen(testEntity->position), sprite);
 
-		for (size_t i = 0; i < path.length; i++)
-		{
-			Vector2Int point = path.points[i];
-			Sprite sprite = (Sprite){.icon = '%', COLOR_WHITE, COLOR_BLACK};
-			canvasSetSprite(gameData->canvas, worldToScreen(point), sprite);
-			// printf("point %d : {%d, %d}\n", i, point.x, point.y);
-		}
-	}
-	Sprite sprite = (Sprite){.icon = '%', COLOR_WHITE, COLOR_BLACK};
-	canvasSetSprite(gameData->canvas, worldToScreen(middleOfCam), sprite);
-	if (path.points != NULL)
-		free(path.points);
 	terminalSetCursorPos((Vector2Int){0, 0});
 	rendererDrawCanvas(gameData->canvas);
 	rendererFlush();
@@ -225,26 +261,35 @@ void tickPlayer(double deltaTime, GameData gameData)
 		if (placeDirection < DIR_WEST)
 			placeDirection = DIR_NORTH;
 	};
-	printf("sState %d", terminalGetKeyState(KEY_S));
 	if (terminalGetKeyState(KEY_S))
 	{
-		player->position.y += deltaTime * player->speed;
+		player->position.y++;
+		// player->position.y += deltaTime * player->speed;
 	};
 	if (terminalGetKeyState(KEY_W))
 	{
-		player->position.y -= deltaTime * player->speed;
+		player->position.y--;
+		// player->position.y -= deltaTime * player->speed;
 	};
 	if (terminalGetKeyState(KEY_A))
 	{
-		player->position.x -= deltaTime * player->speed;
+		player->position.x--;
+		// player->position.x -= deltaTime * player->speed;
 	};
 	if (terminalGetKeyState(KEY_D))
 	{
-		player->position.x += deltaTime * player->speed;
+		player->position.x++;
+		// player->position.x += deltaTime * player->speed;
 	};
 	if (terminalGetKeyState(KEY_C) == KEY_JUST_PRESSED)
 	{
 		settingDoHorisontalSpacing = !settingDoHorisontalSpacing;
+	};
+	if (terminalGetKeyState(KEY_V) == KEY_JUST_PRESSED)
+	{
+		if (testEntity->path.points != NULL)
+			free(testEntity->path.points);
+		testEntity->path = getPath(testEntity->position, screenToWorld(cursorPos), gameData.activeWorld);
 	};
 	if (terminalGetKeyState(KEY_SPACE))
 	{
@@ -258,6 +303,8 @@ void tickPlayer(double deltaTime, GameData gameData)
 void start()
 {
 	player = playerNew();
+	testEntity = malloc(sizeof(Entity));
+	testEntity->position = (Vector2Int){0, 0};
 	printf("\033[2J");	// clear terminal
 	printf("\33[?25l"); // reset ansi
 	World *world = createWorld();
@@ -316,6 +363,7 @@ A			  v
 
 int main(int argc, char const *argv[])
 {
+
 	gameInit();
 	return 0;
 }
