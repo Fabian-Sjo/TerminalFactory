@@ -11,6 +11,7 @@
 #include <process.h>
 #include "../src/terminal/terminal.h"
 #include "../src/sound/sound.h"
+#include "../src/sound/instruments.h"
 
 #define PI M_PI
 Sound getSamples(double duration, double freq)
@@ -40,14 +41,8 @@ Sound getSamples(double duration, double freq)
 }
 SoundGeneratorResult generator(double time)
 {
-	float freq =
-		600.0f + time * 800.0f;
-
-	float env =
-		exp(-8 * time);
-
 	return (SoundGeneratorResult){
-		.val = sin(2 * PI * freq * time) * env, .isFinished = false};
+		.val = laser(time), .isFinished = false};
 }
 
 int main()
