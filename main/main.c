@@ -342,6 +342,7 @@ void gameInit()
 	// assert(CHUNK_SIZE && !(CHUNK_SIZE & (CHUNK_SIZE - 1)));
 
 	// signal(SIGINT, stopGame);
+	
 	addFunctionStart(&terminalInit);
 	addFunctionStart(&start);
 
