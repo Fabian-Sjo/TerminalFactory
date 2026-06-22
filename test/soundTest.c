@@ -20,6 +20,15 @@ static volatile int audioRunning = 1;
 #define SOUND_CHANNELS 16
 #define VOICE_FRAMES 512
 #define BUFFER_COUNT 8
+typedef struct SoundSettings
+{
+	float volume;
+	float pan;
+	float pitch;
+
+	float attackStep; // fade-in speed
+	float releaseStep;
+} SoundSettings;
 typedef struct Sound
 {
 	int sampleNum;
@@ -27,23 +36,29 @@ typedef struct Sound
 	int16_t *samples;
 } Sound;
 
+#define FADE_TIME 0.005f
+
+#define FADE_STEP \
+	(1.0f / (SAMPLE_RATE * FADE_TIME))
+typedef struct Fade
+{
+	float fadeVolume; // current gain
+	float fadeTarget; // target gain
+	float fadeStep;	  // per sample
+} Fade;
 typedef struct Voice
 {
 	Sound *sound;
+	SoundSettings settings;
+	float envelope; // current volume multiplier
 
 	int samplePos;
-	float volume;
-	float pan;
-	float pitch;
-
-	float envelope;	  // current volume multiplier
-	float attackStep; // fade-in speed
-	float releaseStep;
-
 	int playing;
+	Fade fade;
 } Voice;
 
 static Voice voices[SOUND_CHANNELS];
+static Voice newVoices[SOUND_CHANNELS];
 
 Sound getSamples(double duration, double freq)
 {
@@ -59,7 +74,7 @@ Sound getSamples(double duration, double freq)
 			0.50 * sin(2 * M_PI * freq * 2 * t) +
 			0.25 * sin(2 * M_PI * freq * 3 * t);
 
-		double env = exp(-3.0 * t);
+		double env = exp(-1.0 * t);
 
 		samples[i] = (int16_t)(s * env * 15000);
 	}
@@ -70,88 +85,145 @@ Sound getSamples(double duration, double freq)
 		.samples = samples};
 }
 
-void playSound(Sound *sound, int channel)
+
+void playSound(Sound *sound, int channel, SoundSettings *settings)
 {
 	EnterCriticalSection(&voiceMutex);
 
-	voices[channel] = (Voice){
-		.sound = sound,
-		.samplePos = 0,
+	SoundSettings defaultSettings = {
 		.volume = 1.0f,
 		.pan = 0.0f,
 		.pitch = 1.0f,
-		.envelope = 0.0f,
-		.attackStep = 1.0f / (SAMPLE_RATE * 0.001f),
+		.attackStep = 1.0f / (SAMPLE_RATE * 0.005f),
+		.releaseStep = 1.0f / (SAMPLE_RATE * 0.005f),
+	};
 
-		.playing = 1};
+	if (settings)
+		defaultSettings = *settings;
+
+	// Move current voice into fading voice
+	if (voices[channel].playing)
+	{
+		voices[channel].fade.fadeTarget = 0.0f;
+		voices[channel].fade.fadeStep = FADE_STEP;
+	}
+
+	// Create replacement voice
+	newVoices[channel] = (Voice){
+		.sound = sound,
+		.settings = defaultSettings,
+		.samplePos = 0,
+		.playing = 1,
+
+		.envelope = 1.0f,
+
+		.fade = {
+			.fadeVolume = 0.0f,
+			.fadeTarget = 1.0f,
+			.fadeStep = FADE_STEP}};
 
 	LeaveCriticalSection(&voiceMutex);
 }
+void updateFade(Voice *voice)
+{
+	if (voice->fade.fadeVolume < voice->fade.fadeTarget)
+	{
+		voice->fade.fadeVolume += voice->fade.fadeStep;
 
+		if (voice->fade.fadeVolume > voice->fade.fadeTarget)
+			voice->fade.fadeVolume = voice->fade.fadeTarget;
+	}
+	else if (voice->fade.fadeVolume > voice->fade.fadeTarget)
+	{
+		voice->fade.fadeVolume -= voice->fade.fadeStep;
+
+		if (voice->fade.fadeVolume < voice->fade.fadeTarget)
+			voice->fade.fadeVolume = voice->fade.fadeTarget;
+	}
+
+	if (voice->fade.fadeVolume <= 0.0f)
+		voice->playing = 0;
+}
+float getVoiceSample(Voice *voice)
+{
+	if (!voice->playing)
+		return 0;
+
+	Sound *sound = voice->sound;
+
+	if (voice->samplePos >= sound->sampleNum)
+	{
+		voice->playing = 0;
+		return 0;
+	}
+
+	updateFade(voice);
+	float sample =
+		sound->samples[voice->samplePos] / 32768.0f;
+
+	voice->samplePos += 1;
+
+	return sample *
+		   voice->settings.volume * voice->fade.fadeVolume;
+}
 void mixVoices(int16_t *output, int frames)
 {
-	for (int i = 0; i < frames * 2; i++)
-		output[i] = 0;
+	float mix[VOICE_FRAMES * 2] = {0};
 
 	EnterCriticalSection(&voiceMutex);
 
-	for (int v = 0; v < SOUND_CHANNELS; v++)
+	for (int c = 0; c < SOUND_CHANNELS; c++)
 	{
-		Voice *voice = &voices[v];
-
-		if (!voice->playing)
-			continue;
-
-		Sound *sound = voice->sound;
+		Voice *old = &voices[c];
+		Voice *next = &newVoices[c];
 
 		for (int i = 0; i < frames; i++)
 		{
-			if (voice->samplePos >= sound->sampleNum)
-			{
-				voice->playing = 0;
-				break;
-			}
+			float sample = 0;
 
-			float sample =
-				sound->samples[voice->samplePos] / 32768.0f;
-			if (voice->envelope < 1.0f)
-			{
-				voice->envelope += voice->attackStep;
+			sample += getVoiceSample(old);
+			sample += getVoiceSample(next);
 
-				if (voice->envelope > 1.0f)
-					voice->envelope = 1.0f;
-			}
+			float pan = 0;
 
-			sample *= voice->volume * voice->envelope;
+			if (old->playing)
+				pan = old->settings.pan;
 
-			int index = i * 2;
+			else if (next->playing)
+				pan = next->settings.pan;
 
-			int left =
-				output[index] +
-				sample * 32767;
+			float left =
+				sample * ((1.0f - pan) * 0.5f);
 
-			int right =
-				output[index + 1] +
-				sample * 32767;
+			float right =
+				sample * ((1.0f + pan) * 0.5f);
 
-			if (left > 32767)
-				left = 32767;
-			if (left < -32768)
-				left = -32768;
+			mix[i * 2] += left;
+			mix[i * 2 + 1] += right;
+		}
 
-			if (right > 32767)
-				right = 32767;
-			if (right < -32768)
-				right = -32768;
-
-			output[index] = left;
-			output[index + 1] = right;
-
-			voice->samplePos++;
+		// Promote new voice after old one faded out
+		if (!old->playing && next->playing)
+		{
+			*old = *next;
+			next->playing = 0;
 		}
 	}
 
 	LeaveCriticalSection(&voiceMutex);
+
+	for (int i = 0; i < frames * 2; i++)
+	{
+		float sample = mix[i];
+
+		if (sample > 1.0f)
+			sample = 1.0f;
+
+		if (sample < -1.0f)
+			sample = -1.0f;
+
+		output[i] = sample * 32767;
+	}
 }
 void playVoices()
 {
@@ -180,7 +252,7 @@ void playVoices()
 	int16_t buffers[BUFFER_COUNT][VOICE_FRAMES * 2];
 	WAVEHDR headers[BUFFER_COUNT] = {0};
 
-	// Fill and submit both buffers initially
+	// Fill and submit all buffers initially
 	for (int i = 0; i < BUFFER_COUNT; i++)
 	{
 		mixVoices(buffers[i], VOICE_FRAMES);
@@ -211,21 +283,6 @@ void playVoices()
 		{
 			Sleep(1);
 		}
-
-		// check if anything is still playing
-		int active = 0;
-
-		for (int i = 0; i < SOUND_CHANNELS; i++)
-		{
-			if (voices[i].playing)
-			{
-				active = 1;
-				break;
-			}
-		}
-
-		if (!active)
-			continue;
 
 		// recycle finished buffer
 		waveOutUnprepareHeader(
@@ -258,7 +315,7 @@ void playVoices()
 		// swap buffers
 		currentBuffer++;
 		if (currentBuffer >= BUFFER_COUNT)
-			currentBuffer = 1;
+			currentBuffer = 0;
 	}
 
 	// cleanup
@@ -283,8 +340,26 @@ DWORD WINAPI audioThreadFunc(void *data)
 int main()
 {
 	InitializeCriticalSection(&voiceMutex);
+	Sound sounds[10];
+	Key keys[10] = {
+		KEY_0,
+		KEY_1,
+		KEY_2,
+		KEY_3,
+		KEY_4,
+		KEY_5,
+		KEY_6,
+		KEY_7,
+		KEY_8,
+		KEY_9,
+	};
+	for (size_t i = 0; i < 10; i++)
+	{
+		float freq = pow(i, (i) / 12.0f) * 440;
+		sounds[i] = getSamples(2, freq);
+		// sounds[i] = getSamples(7, 10 * (10 + i));
+	}
 
-	Sound a = getSamples(2, 440);
 	Sound b = getSamples(2, 523);
 
 	audioThread = CreateThread(
@@ -295,14 +370,25 @@ int main()
 		0,
 		NULL);
 	terminalInit();
+
 	while (1)
 	{
 
 		poolInput();
-		if (terminalGetKeyState(KEY_Q) == KEY_JUST_PRESSED)
+		for (size_t i = 0; i < 10; i++)
 		{
-			playSound(&a, 1);
-		};
+			SoundSettings defaultSettings = (SoundSettings){
+				.volume = 1.0f,
+				.pan = (i / 10.f),
+				.pitch = 1.0f,
+				.attackStep = 1.0f / (SAMPLE_RATE * 0.001f),
+
+			};
+			if (terminalGetKeyState(keys[i]) == KEY_JUST_PRESSED)
+			{
+				playSound(&sounds[i], i, &defaultSettings);
+			};
+		}
 	}
 
 	audioRunning = 0;
@@ -312,7 +398,4 @@ int main()
 		INFINITE);
 
 	DeleteCriticalSection(&voiceMutex);
-
-	free(a.samples);
-	free(b.samples);
 }
