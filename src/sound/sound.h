@@ -2,6 +2,7 @@
 #define SOUND_H
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #define SOUND_CHANNELS 16
 
@@ -62,4 +63,5 @@ void soundStart(Sound *sound, int channel, float duration, bool loop, SoundSetti
 void soundPlay(Sound *sound, int channel, SoundSettings *settings);
 void soundInit();
 void soundKill();
+Sound parseWav(FILE *file);
 #endif

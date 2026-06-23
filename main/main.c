@@ -16,6 +16,7 @@
 #include "../src/settings.h"
 #include "../src/world/chunkGenerator.h"
 #include "../src/world/pathFinder.h"
+#include "../src/sound/sound.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -46,7 +47,7 @@ typedef struct Entity
 	Vector2Int position;
 	PathFinderPath path;
 } Entity;
-
+Sound walkSound;
 GameData gameData;
 Player *player;
 Entity *testEntity;
@@ -115,6 +116,19 @@ void redrawCanvasAndGui(GameData *gameData)
 	// cavasDrawRectangle(canvas, (Vector2Int){8, 2}, (Vector2Int){5, 5}, (Sprite){'+'}, FILL_NONE);
 	// cavasDrawRectangle(canvas, (Vector2Int){20, 20}, (Vector2Int){5, 5}, (Sprite){'#'}, FILL_ALL);
 }
+
+SoundGeneratorResult walkSoundGenerator(double time)
+{
+
+	float freq =
+		400.0f - time * 800.0f;
+
+	float env =
+		exp(-10 * time);
+
+	return (SoundGeneratorResult){
+		.val = sin(1 * 3.14 * freq * time) * env, .isFinished = time > 0.2};
+}
 void testPath(double deltaTime)
 {
 
@@ -137,7 +151,11 @@ void testPath(double deltaTime)
 		Vector2Int newPos = testEntity->path.points[1];
 
 		if (isTileWalkable(gameData.activeWorld, newPos))
+		{
+			
+			soundPlay(&walkSound, 1, NULL);
 			testEntity->position = newPos;
+		}
 		Vector2Int oldTarget = testEntity->path.points[testEntity->path.length - 1];
 		if (testEntity->path.points != NULL)
 			free(testEntity->path.points);
@@ -234,6 +252,7 @@ void render(double deltaTime, GameData *gameData)
 	// terminalDrawCanvas(gameData->canvas);
 	// terminalDraw();
 }
+
 void tickPlayer(double deltaTime, GameData gameData)
 {
 
@@ -287,6 +306,7 @@ void tickPlayer(double deltaTime, GameData gameData)
 	};
 	if (terminalGetKeyState(KEY_V) == KEY_JUST_PRESSED)
 	{
+
 		if (testEntity->path.points != NULL)
 			free(testEntity->path.points);
 		testEntity->path = getPath(testEntity->position, screenToWorld(cursorPos), gameData.activeWorld);
@@ -300,13 +320,21 @@ void tickPlayer(double deltaTime, GameData gameData)
 		placeTile(gameData.activeWorld, screenToWorld(cursorPos), placeDirection, selectedTile);
 	};
 }
+
 void start()
 {
+	walkSound = (Sound){
+		.type = SOUND_TYPE_GENERATOR,
+		.source.generator = {
+			.generator = &walkSoundGenerator}};
+
+
 	player = playerNew();
 	testEntity = malloc(sizeof(Entity));
 	testEntity->position = (Vector2Int){0, 0};
 	testEntity->path.length = 0;
 	testEntity->path.points = NULL;
+	soundInit();
 	printf("\033[2J");	// clear terminal
 	printf("\33[?25l"); // reset ansi
 	World *world = createWorld();
@@ -344,7 +372,7 @@ void gameInit()
 	// assert(CHUNK_SIZE && !(CHUNK_SIZE & (CHUNK_SIZE - 1)));
 
 	// signal(SIGINT, stopGame);
-	
+
 	addFunctionStart(&terminalInit);
 	addFunctionStart(&start);
 

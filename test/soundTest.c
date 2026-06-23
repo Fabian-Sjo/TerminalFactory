@@ -42,8 +42,16 @@ Sound getSamples(double duration, double freq)
 }
 SoundGeneratorResult generator(double time)
 {
+
+	float freq =
+		1200.0f -
+		time * 1500.0f;
+
+	float env =
+		exp(-5 * time);
+
 	return (SoundGeneratorResult){
-		.val = synthLead(time), .isFinished = false};
+		.val = sin(2 * 3.14 * freq * time) * env, .isFinished = false};
 }
 
 int main()
