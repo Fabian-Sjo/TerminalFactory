@@ -20,12 +20,7 @@ typedef enum
 	SOUND_TYPE_SAMPLE,
 	SOUND_TYPE_GENERATOR
 } SoundType;
-typedef enum
-{
-	SOUND_DURATION_LOOP,
-	SOUND_DURATION_TILL_END,
-	SOUND_DURATION_SET_TIME,
-} SoundDuration;
+
 
 typedef struct
 {
@@ -63,5 +58,5 @@ void soundStart(Sound *sound, int channel, float duration, bool loop, SoundSetti
 void soundPlay(Sound *sound, int channel, SoundSettings *settings);
 void soundInit();
 void soundKill();
-Sound parseWav(FILE *file);
+Sound *parseWav(FILE *file);
 #endif

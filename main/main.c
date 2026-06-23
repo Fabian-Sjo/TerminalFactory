@@ -152,7 +152,7 @@ void testPath(double deltaTime)
 
 		if (isTileWalkable(gameData.activeWorld, newPos))
 		{
-			
+
 			soundPlay(&walkSound, 1, NULL);
 			testEntity->position = newPos;
 		}
@@ -328,7 +328,6 @@ void start()
 		.source.generator = {
 			.generator = &walkSoundGenerator}};
 
-
 	player = playerNew();
 	testEntity = malloc(sizeof(Entity));
 	testEntity->position = (Vector2Int){0, 0};
@@ -347,6 +346,14 @@ void start()
 			generateChunk(world, x * 8, y * 8, &generateMoonChunk);
 	}
 
+	FILE *fptr = fopen("sample-12s.wav", "rb");
+	if (!fptr)
+	{
+		printf("failed to open file");
+		return 0;
+	}
+	Sound *music = parseWav(fptr);
+	soundStart(music, 9, 0, true, NULL);
 	// canvasDrawNineRect(canvas, (Vector2Int){20, 2}, (Vector2Int){10, 10}, nineRect, FILL_NONE);
 
 	// canvasDrawNineRect(canvas, (Vector2Int){24, 6}, (Vector2Int){10, 10}, nineRect, FILL_NONE);

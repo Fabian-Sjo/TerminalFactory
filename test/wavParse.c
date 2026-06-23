@@ -163,7 +163,6 @@ int main()
 		.type = SOUND_TYPE_SAMPLE,
 		.source.sample = {
 			.sampleNum = wavFile->nrOfSamples,
-			.sampleRate = wavFile->sampleRate,
 			.samples = wavFile->data}};
 
 	soundInit();
