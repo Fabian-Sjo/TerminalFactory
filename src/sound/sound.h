@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define SAMPLE_RATE 44100
 #define SOUND_CHANNELS 16
 
 typedef struct SoundSettings
@@ -29,7 +28,6 @@ typedef enum
 
 typedef struct
 {
-	int sampleRate;
 	int sampleNum;
 	int16_t *samples;
 
@@ -56,7 +54,8 @@ typedef struct Sound
 	} source;
 
 } Sound;
-
+int soundGetSampleRate();
+void soundSetSampleRate(int sampleRate);
 bool soundIsPlaying(int channel);
 void soundStop(int channel);
 void soundStart(Sound *sound, int channel, float duration, bool loop, SoundSettings *settings);

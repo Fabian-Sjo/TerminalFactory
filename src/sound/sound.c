@@ -20,7 +20,7 @@ static volatile int audioRunning = 1;
 #define FADE_TIME 0.005f
 
 #define FADE_STEP \
-	(1.0f / (SAMPLE_RATE * FADE_TIME))
+	(1.0f / (soundSampleRate * FADE_TIME))
 
 typedef struct Fade
 {
@@ -44,7 +44,16 @@ typedef struct Voice
 
 static Voice voices[SOUND_CHANNELS];
 static Voice newVoices[SOUND_CHANNELS];
+int soundSampleRate = 44100;
 
+int soundGetSampleRate()
+{
+	return soundSampleRate;
+}
+void soundSetSampleRate(int sampleRate)
+{
+	soundSampleRate = sampleRate;
+}
 bool soundIsPlaying(int channel)
 {
 	return voices[channel].playing;
@@ -67,8 +76,8 @@ void playSoundDurationType(Sound *sound, int channel, float duration, SoundDurat
 		.volume = 1.0f,
 		.pan = 0.0f,
 		.pitch = 1.0f,
-		.attackStep = 1.0f / (SAMPLE_RATE * 0.005f),
-		.releaseStep = 1.0f / (SAMPLE_RATE * 0.005f),
+		.attackStep = 1.0f / (soundSampleRate * 0.005f),
+		.releaseStep = 1.0f / (soundSampleRate * 0.005f),
 	};
 
 	if (settings)
@@ -142,7 +151,7 @@ float getSoundSample(Voice *voice)
 		{
 		case SOUND_DURATION_LOOP:
 		{
-			float timePlayed = voice->samplePos / ((float)voice->sound->source.sample.sampleRate);
+			float timePlayed = voice->samplePos / ((float)soundSampleRate);
 			bool shouldRestart = false;
 			if (voice->duration > 0 && timePlayed >= voice->duration)
 				shouldRestart = true;
@@ -159,8 +168,7 @@ float getSoundSample(Voice *voice)
 		case SOUND_DURATION_SET_TIME:
 		{
 			double time =
-				voice->samplePos /
-				(double)sample->sampleRate;
+				voice->samplePos / (double)soundSampleRate;
 
 			if (time >= voice->duration)
 			{
@@ -197,10 +205,8 @@ float getSoundSample(Voice *voice)
 		}
 
 		float value = sample->samples[voice->samplePos] / 32768.0f;
-		voice->samplePos +=
-			voice->settings.pitch;
 
-		voice->samplePos += 1;
+		voice->samplePos += 1 * voice->settings.pitch;
 		return value;
 	}
 
@@ -254,7 +260,7 @@ float getSoundSample(Voice *voice)
 		float value = result.val;
 
 		voice->time +=
-			(1.0 / SAMPLE_RATE) *
+			(1.0 / soundSampleRate) *
 			voice->settings.pitch;
 
 		return value *
@@ -344,10 +350,10 @@ void playVoices()
 
 	format.wFormatTag = WAVE_FORMAT_PCM;
 	format.nChannels = 2;
-	format.nSamplesPerSec = SAMPLE_RATE;
+	format.nSamplesPerSec = soundSampleRate;
 	format.wBitsPerSample = 16;
 	format.nBlockAlign = 4;
-	format.nAvgBytesPerSec = SAMPLE_RATE * 4;
+	format.nAvgBytesPerSec = soundSampleRate * 4;
 
 	HWAVEOUT wave;
 
@@ -509,7 +515,7 @@ int main()
 			.volume = 0.1f,
 			.pan = (0),
 			.pitch = 1.0f,
-			.attackStep = 1.0f / (SAMPLE_RATE * 0.001f),
+			.attackStep = 1.0f / (soundSampleRate * 0.001f),
 
 		};
 		printf("[1] : %d\n", soundIsPlayingChannel(1));
@@ -526,7 +532,7 @@ Start			soundPlay(&b, 1, &lower);
 				.volume = 1.0f,
 				.pan = (i / 10.f),
 				.pitch = 1.0f,
-				.attackStep = 1.0f / (SAMPLE_RATE * 0.001f),
+				.attackStep = 1.0f / (soundSampleRate * 0.001f),
 
 			};
 			if (terminalGetKeyState(keys[i]) == KEY_JUST_PRESSED)

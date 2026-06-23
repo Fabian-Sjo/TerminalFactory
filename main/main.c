@@ -305,6 +305,8 @@ void start()
 	player = playerNew();
 	testEntity = malloc(sizeof(Entity));
 	testEntity->position = (Vector2Int){0, 0};
+	testEntity->path.length = 0;
+	testEntity->path.points = NULL;
 	printf("\033[2J");	// clear terminal
 	printf("\33[?25l"); // reset ansi
 	World *world = createWorld();

@@ -14,14 +14,16 @@
 #include "../src/sound/instruments.h"
 
 #define PI M_PI
+
 Sound getSamples(double duration, double freq)
 {
-	int sampleCount = duration * SAMPLE_RATE;
+	int sampleRate = 44100 * 44100 / soundGetSampleRate();
+	int sampleCount = duration * sampleRate;
 	int16_t *samples = malloc(sampleCount * sizeof(int16_t));
 
 	for (int i = 0; i < sampleCount; i++)
 	{
-		double t = (double)i / SAMPLE_RATE;
+		double t = (double)i / soundGetSampleRate();
 
 		double s =
 			1.00 * sin(2 * M_PI * freq * t) +
@@ -36,17 +38,17 @@ Sound getSamples(double duration, double freq)
 		.type = SOUND_TYPE_SAMPLE,
 		.source.sample = {
 			.sampleNum = sampleCount,
-			.sampleRate = SAMPLE_RATE,
 			.samples = samples}};
 }
 SoundGeneratorResult generator(double time)
 {
 	return (SoundGeneratorResult){
-		.val = laser(time), .isFinished = false};
+		.val = synthLead(time), .isFinished = false};
 }
 
 int main()
 {
+	soundSetSampleRate(5000);
 	soundInit();
 	Sound sounds[10];
 	Key keys[10] = {
@@ -81,7 +83,7 @@ int main()
 			.volume = 0.1f,
 			.pan = (0),
 			.pitch = 1.0f,
-			.attackStep = 1.0f / (SAMPLE_RATE * 0.001f),
+			.attackStep = 1.0f / (40000 * 0.001f),
 
 		};
 		printf("[1] : %d\n", soundIsPlaying(1));
@@ -107,7 +109,7 @@ int main()
 				.volume = 1.0f,
 				.pan = (i / 10.f),
 				.pitch = 1.0f,
-				.attackStep = 1.0f / (SAMPLE_RATE * 0.001f),
+				.attackStep = 1.0f / (soundGetSampleRate() * 0.001f),
 
 			};
 			if (terminalGetKeyState(keys[i]) == KEY_JUST_PRESSED)
