@@ -3,6 +3,7 @@
 
 #include "sprite.h"
 #include "..\utils\vector2.h"
+#include <stdbool.h>
 
 typedef struct Canvas Canvas;
 typedef struct NineRect
@@ -10,6 +11,8 @@ typedef struct NineRect
 	Sprite sprites[3][3];
 } NineRect;
 Canvas *canvasNew(Vector2Int size);
+void canvasSetDoubleSpaced(Canvas *canvas, bool doDoubleSpace);
+bool canvasGetDoubleSpaced(Canvas *canvas);
 
 void canvasSetSize(Canvas *canvas, Vector2Int size);
 Vector2Int canvasGetSize(Canvas *canvas);

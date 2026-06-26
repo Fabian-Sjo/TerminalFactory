@@ -6,7 +6,13 @@
 
 #include "..\utils\vector2.h"
 
+typedef struct
+{
+	Vector2Int pos;
+} SubWindowSettings;
 
+
+int rendererAddCanvas(Canvas *canvas);
 void rendererDrawCanvas(Canvas *canvas);
 void rendererFlush();
 

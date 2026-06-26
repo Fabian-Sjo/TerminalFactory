@@ -20,13 +20,10 @@ typedef enum
 	SOUND_TYPE_SAMPLE,
 	SOUND_TYPE_GENERATOR
 } SoundType;
-
-
 typedef struct
 {
 	int sampleNum;
 	int16_t *samples;
-
 } SoundSample;
 typedef struct
 {

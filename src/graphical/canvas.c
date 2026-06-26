@@ -1,9 +1,10 @@
 #include "canvas.h"
 #include "stdlib.h"
+#include <stdbool.h>
 typedef struct Canvas
 {
 	Vector2Int size;
-
+	bool isDoubleSpaced;
 	// 2d array packed in to 1D
 	// sprites[x + y * width]
 	Sprite *sprites;
@@ -14,7 +15,16 @@ Canvas *canvasNew(Vector2Int size)
 	Canvas *newCanvas = malloc(sizeof(Canvas));
 	newCanvas->size = size;
 	newCanvas->sprites = calloc(size.x * size.y, sizeof(Sprite));
+	newCanvas->isDoubleSpaced = false;
 	return newCanvas;
+}
+void canvasSetDoubleSpaced(Canvas *canvas, bool doDoubleSpace)
+{
+	canvas->isDoubleSpaced = doDoubleSpace;
+}
+bool canvasGetDoubleSpaced(Canvas *canvas)
+{
+	return canvas->isDoubleSpaced;
 }
 void canvasSetSize(Canvas *canvas, Vector2Int size)
 {
@@ -24,10 +34,11 @@ void canvasSetSize(Canvas *canvas, Vector2Int size)
 	{
 		return;
 	}
-	Sprite *newSprites = calloc(size.x * size.y, sizeof(Sprite));
-	;
-	free(canvas->sprites);
-	canvas->sprites = newSprites;
+	canvas->sprites = realloc(canvas->sprites, size.x * size.y * sizeof(Sprite));
+	//		Sprite *newSprites = calloc(size.x * size.y, sizeof(Sprite));
+	//	;
+	//	free(canvas->sprites);
+	//	canvas->sprites = newSprites;
 	canvas->size = size;
 }
 Vector2Int canvasGetSize(Canvas *canvas)
@@ -51,7 +62,9 @@ void canvasSetSprite(Canvas *canvas, Vector2Int pos, Sprite sprite)
 }
 Sprite canvasGetSprite(Canvas *canvas, Vector2Int pos)
 {
-	return canvas->sprites[pos.x + pos.y * canvas->size.x];
+	if (canvas->isDoubleSpaced && (pos.x & 1))
+		return (Sprite){.icon = ' '};
+	return canvas->sprites[pos.x / (1 + canvas->isDoubleSpaced) + pos.y * canvas->size.x];
 }
 
 void canvasRemove(Canvas *canvas);

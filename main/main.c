@@ -13,7 +13,6 @@
 #include "../src/world/world.h"
 
 #include "../src/gameData.h"
-#include "../src/settings.h"
 #include "../src/world/chunkGenerator.h"
 #include "../src/world/pathFinder.h"
 #include "../src/sound/sound.h"
@@ -97,7 +96,9 @@ void debugInfo(double deltaTime, GameData *gameData)
 void redrawCanvasAndGui(GameData *gameData)
 {
 	printf("\033[2J\033[H");
-	gameData->canvas = canvasNew(gameData->screenSize);
+	canvasSetSize(gameData->canvas,gameData->screenSize);
+	//gameData->canvas = canvasNew(gameData->screenSize);
+	//canvasSetDoubleSpaced(gameData->canvas, true);
 	Vector2Int screenSize = gameData->screenSize;
 	NineRect nineRect = {
 		{{(Sprite){'\\'}, (Sprite){'|'}, (Sprite){'/'}},
@@ -183,16 +184,22 @@ void loop(double deltaTime)
 			generateChunk(gameData.activeWorld, player->position.x + x * 8, player->position.y + y * 8, &generateMoonChunk);
 	}
 }
-
+Vector2Int terminalToScreenSize(Canvas *canvas, Vector2Int terminalSize)
+{
+	return (Vector2Int){canvasGetDoubleSpaced(canvas) ? terminalSize.x / 2 : terminalSize.x, terminalSize.y};
+}
 void render(double deltaTime, GameData *gameData)
 {
-	Vector2Int termsize = getTermSize();
-	termsize = vecDivI(vecSubI(termsize, screenSafezone), (Vector2Int){1 + settingDoHorisontalSpacing, 1});
-	if (termsize.x != gameData->screenSize.x || termsize.y != gameData->screenSize.y)
+	Vector2Int termsize = vecDivI(vecSubI(getTermSize(), screenSafezone), (Vector2Int){1, 1});
+
+	Vector2Int newScreenSize = terminalToScreenSize(gameData->canvas, termsize);
+
+	if (newScreenSize.x != gameData->screenSize.x || newScreenSize.y != gameData->screenSize.y)
 	{
-		gameData->screenSize = termsize;
+		gameData->screenSize = newScreenSize;
 		redrawCanvasAndGui(gameData);
 	}
+
 	Vector2Int position = {
 		floor(player->position.x) - floor(gameData->screenSize.x / 2),
 		floor(player->position.y) - floor(gameData->screenSize.y / 2)};
@@ -252,12 +259,14 @@ void render(double deltaTime, GameData *gameData)
 	// terminalDrawCanvas(gameData->canvas);
 	// terminalDraw();
 }
-
+Vector2Int canvasMousePos(Canvas *canvas)
+{
+}
 void tickPlayer(double deltaTime, GameData gameData)
 {
 
 	poolInput();
-	cursorPos = vecDivI(terminalGetMousePos(), (Vector2Int){1 + settingDoHorisontalSpacing, 1});
+	cursorPos = vecDivI(terminalGetMousePos(), (Vector2Int){1, 1});
 	if (terminalGetKeyState(KEY_ESC) == KEY_JUST_PRESSED)
 	{
 		stopGame();
@@ -302,7 +311,7 @@ void tickPlayer(double deltaTime, GameData gameData)
 	};
 	if (terminalGetKeyState(KEY_C) == KEY_JUST_PRESSED)
 	{
-		settingDoHorisontalSpacing = !settingDoHorisontalSpacing;
+		canvasSetDoubleSpaced(gameData.canvas, !canvasGetDoubleSpaced(gameData.canvas));
 	};
 	if (terminalGetKeyState(KEY_V) == KEY_JUST_PRESSED)
 	{
@@ -333,7 +342,7 @@ void start()
 	testEntity->position = (Vector2Int){0, 0};
 	testEntity->path.length = 0;
 	testEntity->path.points = NULL;
-	soundInit();
+
 	printf("\033[2J");	// clear terminal
 	printf("\33[?25l"); // reset ansi
 	World *world = createWorld();
@@ -353,7 +362,9 @@ void start()
 		return 0;
 	}
 	Sound *music = parseWav(fptr);
-	soundStart(music, 9, 0, true, NULL);
+
+	// soundStart(music, 9, 0, true, NULL);
+
 	// canvasDrawNineRect(canvas, (Vector2Int){20, 2}, (Vector2Int){10, 10}, nineRect, FILL_NONE);
 
 	// canvasDrawNineRect(canvas, (Vector2Int){24, 6}, (Vector2Int){10, 10}, nineRect, FILL_NONE);
@@ -379,8 +390,9 @@ void gameInit()
 	// assert(CHUNK_SIZE && !(CHUNK_SIZE & (CHUNK_SIZE - 1)));
 
 	// signal(SIGINT, stopGame);
+	soundInit();
+	terminalInit();
 
-	addFunctionStart(&terminalInit);
 	addFunctionStart(&start);
 
 	addFunctionLoop(&loop);

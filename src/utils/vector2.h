@@ -18,6 +18,7 @@ typedef struct Vector2Int
 Vector2Int vecSubI(Vector2Int vecA, Vector2Int vecB);
 Vector2Int vecAddI(Vector2Int vecA, Vector2Int vecB);
 Vector2Int vecDivI(Vector2Int vecA, Vector2Int vecB);
+Vector2Int vecMulI(Vector2Int vecA, Vector2Int vecB);
 Vector2Int vecRound(Vector2Float vec);
 Vector2Int vecFloor(Vector2Float vec);
 #endif

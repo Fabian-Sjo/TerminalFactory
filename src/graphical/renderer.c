@@ -5,7 +5,6 @@
 #include "color.h"
 #include "renderer.h"
 #include "canvas.h"
-#include "../settings.h"
 #include "../terminal/terminal.h"
 
 char *buffer = NULL;
@@ -64,14 +63,13 @@ void addSpriteToBuffer(Sprite sprite)
 	if (c == '\0')
 		c = ' ';
 	addCharToBuffer(c);
-	if (settingDoHorisontalSpacing)
-		addCharToBuffer(' ');
 }
 void rendererDrawCanvas(Canvas *canvas)
 {
-	for (int y = 0; y < canvasGetSize(canvas).y; y++)
+	Vector2Int size = vecMulI(canvasGetSize(canvas), (Vector2Int){1 + canvasGetDoubleSpaced(canvas), 1});
+	for (int y = 0; y < size.y; y++)
 	{
-		for (int x = 0; x < canvasGetSize(canvas).x; x++)
+		for (int x = 0; x < size.x; x++)
 		{
 			addSpriteToBuffer(canvasGetSprite(canvas, (Vector2Int){x, y}));
 		}
