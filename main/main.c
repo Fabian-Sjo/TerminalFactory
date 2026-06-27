@@ -96,9 +96,9 @@ void debugInfo(double deltaTime, GameData *gameData)
 void redrawCanvasAndGui(GameData *gameData)
 {
 	printf("\033[2J\033[H");
-	canvasSetSize(gameData->canvas,gameData->screenSize);
-	//gameData->canvas = canvasNew(gameData->screenSize);
-	//canvasSetDoubleSpaced(gameData->canvas, true);
+	canvasSetSize(gameData->canvas, gameData->screenSize);
+	// gameData->canvas = canvasNew(gameData->screenSize);
+	// canvasSetDoubleSpaced(gameData->canvas, true);
 	Vector2Int screenSize = gameData->screenSize;
 	NineRect nineRect = {
 		{{(Sprite){'\\'}, (Sprite){'|'}, (Sprite){'/'}},
@@ -266,7 +266,7 @@ void tickPlayer(double deltaTime, GameData gameData)
 {
 
 	poolInput();
-	cursorPos = vecDivI(terminalGetMousePos(), (Vector2Int){1, 1});
+	cursorPos = vecDivI(terminalGetMousePos(), (Vector2Int){1 + canvasGetDoubleSpaced(gameData.canvas), 1});
 	if (terminalGetKeyState(KEY_ESC) == KEY_JUST_PRESSED)
 	{
 		stopGame();
