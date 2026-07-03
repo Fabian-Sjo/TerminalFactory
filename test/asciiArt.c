@@ -20,42 +20,80 @@ struct Window
 {
 	Vector2Int position;
 	Window *parent;
-	Canvas *canvas;
+	void (*render)(Window window, Canvas *canvas);
+	Vector2Int scale;
 	Vector2Int size;
 };
 
-Window screenWindow = {
-	.position = {0, 0},
-	.parent = NULL,
-	.canvas = NULL,
-	.size = {20, 20}};
-
-Window canvasWindow = {
-	.position = {10, 2},
-	.parent = NULL,
-	.canvas = NULL,
-	.size = {35, 35}};
-
-Window palleteWindow = {
-	.parent = NULL,
-	.canvas = NULL,
-	.size = {20, 20}};
-
-
-	
 Sprite selectedSprite = {.icon = '@', {100, 100, 0}, COLOR_BLACK_CONST};
 Sprite deletedSprite = {.icon = ' ', {0, 0, 0}, {0, 0, 0}};
 
 char *iconPallete = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~;";
 
 Vector2Int cursorPos;
+Canvas *artCanvas;
+Canvas *screenCanvas;
+
+void renderCanvas(Window window, Canvas *canvas)
+{
+	canvasCopyToCanvas(
+		canvas,
+		window.position,
+		artCanvas,
+		(Vector2Int){0, 0},
+		vecDivI(window.size, window.scale));
+}
+void renderPallete(Window window, Canvas *canvas)
+{
+	char iconIndex = -1;
+	while ((iconPallete[++iconIndex]) != 0)
+	{
+		Vector2Int pos = {(iconIndex) % window.size.x, (iconIndex) / window.size.x};
+		canvasSetSprite(canvas, vecAddI(window.position, pos),
+						(Sprite){
+							.icon = iconPallete[iconIndex],
+							.colorBack = COLOR_BLACK,
+							.colorFore = COLOR_WHITE});
+	}
+}
+void renderUI(Window window, Canvas *canvas)
+{
+	NineRect nineRect = {
+		{{(Sprite){'\\'}, (Sprite){'|'}, (Sprite){'/'}},
+		 {(Sprite){'='}, (Sprite){'.'}, (Sprite){'='}},
+		 {(Sprite){'/'}, (Sprite){'|'}, (Sprite){'\\'}}}};
+
+	canvasDrawNineRect(canvas,
+					   vecSubI(window.position, (Vector2Int){0, 0}),
+					   vecAddI(window.size, (Vector2Int){0, 0}),
+					   nineRect, FILL_NONE);
+}
+Window screenWindow = {
+	.position = {0, 0},
+	.parent = NULL,
+	.scale = {1, 1},
+	.render = &renderUI,
+	.size = {20, 20}};
+
+Window canvasWindow = {
+	.position = {10, 2},
+	.parent = NULL,
+	.scale = {1, 1},
+	.render = &renderCanvas,
+	.size = {35, 35}};
+
+Window palleteWindow = {
+	.parent = NULL,
+	.scale = {1, 1},
+	.render = &renderPallete,
+	.size = {20, 20}};
 
 Vector2Int localizeMousePos(Vector2Int mousePos, Window window)
 {
 	if (window.parent != NULL)
 		mousePos = localizeMousePos(mousePos, *window.parent);
 
-	Vector2Int scale = canvasGetDisplayScale(window.canvas);
+	Vector2Int scale = window.scale;
 	return (Vector2Int){
 		(mousePos.x - window.position.x) / scale.x,
 		(mousePos.y - window.position.y) / scale.y};
@@ -68,55 +106,39 @@ bool isMouseInBounds(Vector2Int mousePos, Window window)
 			localMousePos.x < window.size.x &&
 			localMousePos.y < window.size.y);
 }
+
 void loop(double deltaTime)
 {
-	Vector2Int termsize = vecDivI(getTermSize(), (Vector2Int){1 + canvasGetDoubleSpaced(screenWindow.canvas), 1});
+	Vector2Int termsize = vecDivI(getTermSize(), (Vector2Int){1 + canvasGetDoubleSpaced(screenCanvas), 1});
 	termsize.y = canvasWindow.size.y + 10;
 	Vector2Int canvasDisplaySize = {
-		canvasWindow.size.x * (1 + (canvasGetDoubleSpaced(canvasWindow.canvas))),
+		canvasWindow.size.x * (1 + (canvasGetDoubleSpaced(artCanvas))),
 		canvasWindow.size.y};
 
 	Vector2Int screenMousePos = localizeMousePos(cursorPos, screenWindow);
 	Vector2Int canvasMousePos = localizeMousePos(cursorPos, canvasWindow);
 
-	canvasSetSize(screenWindow.canvas, termsize);
+	canvasSetSize(screenCanvas, termsize);
 	screenWindow.size = termsize;
 
-	terminalSetCursorPos((Vector2Int){0, 0});
-	canvasFill(screenWindow.canvas, (Sprite){.icon = ' ', .colorBack = COLOR_BLACK, .colorFore = COLOR_WHITE});
-	canvasCopyToCanvas(screenWindow.canvas, canvasWindow.position, canvasWindow.canvas, (Vector2Int){0, 0}, canvasWindow.size);
-
-	NineRect nineRect = {
-		{{(Sprite){'\\'}, (Sprite){'|'}, (Sprite){'/'}},
-		 {(Sprite){'='}, (Sprite){'.'}, (Sprite){'='}},
-		 {(Sprite){'/'}, (Sprite){'|'}, (Sprite){'\\'}}}};
-
-	canvasDrawNineRect(screenWindow.canvas,
-					   vecSubI(canvasWindow.position, (Vector2Int){1, 1}),
-					   vecAddI(canvasDisplaySize, (Vector2Int){2, 2}),
-					   nineRect, FILL_NONE);
-
 	palleteWindow.position = (Vector2Int){canvasWindow.position.x, canvasWindow.position.y + canvasWindow.size.y + 1};
-	palleteWindow.size.x = canvasWindow.size.x * (1 + canvasGetDoubleSpaced(canvasWindow.canvas));
+	palleteWindow.size.x = canvasWindow.size.x;
 	palleteWindow.size.y = 5;
 
-	char iconIndex = -1;
-	while ((iconPallete[++iconIndex]) != 0)
-	{
-		Vector2Int pos = {(iconIndex) % palleteWindow.size.x, (iconIndex) / palleteWindow.size.x};
-		canvasSetSprite(screenWindow.canvas, vecAddI(palleteWindow.position, pos),
-						(Sprite){
-							.icon = iconPallete[iconIndex],
-							.colorBack = COLOR_BLACK,
-							.colorFore = COLOR_WHITE});
-	}
+	terminalSetCursorPos((Vector2Int){0, 0});
+	canvasFill(screenCanvas, (Sprite){.icon = '*', .colorBack = COLOR_BLACK, .colorFore = COLOR_WHITE});
 
-	rendererDrawCanvas(screenWindow.canvas);
+	screenWindow.render(screenWindow, screenCanvas);
+	canvasWindow.render(canvasWindow, screenCanvas);
+	palleteWindow.render(palleteWindow, screenCanvas);
+
+	rendererDrawCanvas(screenCanvas);
+
 	terminalSetCursorVisible(false);
 	rendererFlush();
-	printf("fullScreen: %d canvasWindow.canvas %d\n",
-		   canvasGetDoubleSpaced(screenWindow.canvas),
-		   canvasGetDoubleSpaced(canvasWindow.canvas));
+	printf("fullScreen: %d artCanvas %d\n",
+		   canvasGetDoubleSpaced(screenCanvas),
+		   canvasGetDoubleSpaced(artCanvas));
 	printf("true mouse pos		:{%2d,%2d} [%d]\n",
 		   cursorPos.x,
 		   cursorPos.y);
@@ -132,7 +154,7 @@ void loop(double deltaTime)
 		   localizeMousePos(cursorPos, palleteWindow).x,
 		   localizeMousePos(cursorPos, palleteWindow).y,
 		   isMouseInBounds(cursorPos, palleteWindow));
-
+	printf("widnth %d", canvasWindow.size.x);
 	poolInput();
 	cursorPos = vecDivI(terminalGetMousePos(), (Vector2Int){1, 1});
 	if (isMouseInBounds(cursorPos, canvasWindow))
@@ -141,8 +163,8 @@ void loop(double deltaTime)
 			vecMulI(
 				vecDivI(
 					cursorPos,
-					canvasGetDisplayScale(canvasWindow.canvas)),
-				canvasGetDisplayScale(canvasWindow.canvas)));
+					canvasGetDisplayScale(artCanvas)),
+				canvasGetDisplayScale(artCanvas)));
 
 		terminalSetCursorVisible(true);
 	}
@@ -164,11 +186,15 @@ void loop(double deltaTime)
 	};
 	if (terminalGetKeyState(KEY_C) == KEY_JUST_PRESSED)
 	{
-		canvasSetDoubleSpaced(canvasWindow.canvas, !canvasGetDoubleSpaced(canvasWindow.canvas));
+		canvasSetDoubleSpaced(artCanvas, !canvasGetDoubleSpaced(artCanvas));
+		canvasWindow.scale = canvasGetDisplayScale(artCanvas);
+		canvasWindow.size = vecMulI(canvasGetSize(artCanvas), canvasWindow.scale);
 	};
 	if (terminalGetKeyState(KEY_V) == KEY_JUST_PRESSED)
 	{
-		canvasSetDoubleSpaced(screenWindow.canvas, !canvasGetDoubleSpaced(screenWindow.canvas));
+		canvasSetDoubleSpaced(screenCanvas, !canvasGetDoubleSpaced(screenCanvas));
+		screenWindow.scale = canvasGetDisplayScale(screenCanvas);
+		screenWindow.size = vecMulI(canvasGetSize(screenCanvas), screenWindow.scale);
 	};
 	if (terminalGetKeyState(KEY_SPACE))
 	{
@@ -178,7 +204,7 @@ void loop(double deltaTime)
 		if (isMouseInBounds(cursorPos, canvasWindow))
 		{
 
-			canvasSetSprite(canvasWindow.canvas, canvasMousePos, selectedSprite);
+			canvasSetSprite(artCanvas, canvasMousePos, selectedSprite);
 		}
 		else if (isMouseInBounds(cursorPos, palleteWindow))
 		{
@@ -194,9 +220,9 @@ void loop(double deltaTime)
 	};
 	if (terminalGetKeyState(KEY_MOUSE_2))
 	{
-		canvasSetSprite(canvasWindow.canvas, canvasMousePos, deletedSprite);
+		canvasSetSprite(artCanvas, canvasMousePos, deletedSprite);
 	};
-	// terminalDrawCanvas(gameData->canvasWindow.canvas);
+	// terminalDrawCanvas(gameData->artCanvas);
 	// terminalDraw();
 }
 
@@ -208,10 +234,11 @@ void start()
 	canvasWindow.parent = &screenWindow;
 	palleteWindow.parent = &screenWindow;
 
-	canvasWindow.canvas = canvasNew(canvasWindow.size);
-	canvasSetDoubleSpaced(canvasWindow.canvas, true);
-	screenWindow.canvas = canvasNew(screenWindow.size);
-	canvasSetDoubleSpaced(screenWindow.canvas, false);
+	artCanvas = canvasNew(canvasWindow.size);
+	canvasSetDoubleSpaced(artCanvas, true);
+	canvasWindow.scale = canvasGetDisplayScale(artCanvas);
+	screenCanvas = canvasNew(screenWindow.size);
+	canvasSetDoubleSpaced(screenCanvas, false);
 
 	terminalSetCursorVisible(true);
 }

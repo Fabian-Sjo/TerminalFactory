@@ -85,24 +85,42 @@ canvasFill(Canvas *canvas, Sprite sprite)
 }
 void canvasCopyToCanvas(
 	Canvas *destination,
-	Vector2Int destinationPos,
+	Vector2Int destinationStart,
 	Canvas *source,
 	Vector2Int sourceStart,
-	Vector2Int sourceSize)
+	Vector2Int size)
 {
-	for (size_t x = 0; x < sourceSize.x; x++)
-	{
-		for (size_t y = 0; y < sourceSize.y; y++)
-		{
-			bool doubleSpaceResult = source->isDoubleSpaced;
 
-			canvasSetSprite(
-				destination,
-				(Vector2Int){
-					(destinationPos.x) + x * (1 + doubleSpaceResult),
-					(destinationPos.y) + y,
-				},
-				source->sprites[sourceStart.x + x / (1) + sourceStart.y + y * source->size.x]);
+	for (size_t x = 0; x < size.x; x++)
+	{
+		for (size_t y = 0; y < size.y; y++)
+		{
+			Sprite sprite = source->sprites[sourceStart.x + x + (sourceStart.y + y) * source->size.x];
+			if (source->isDoubleSpaced)
+			{
+				canvasSetSprite(
+					destination,
+					(Vector2Int){
+						(destinationStart.x) + x * 2 + 1,
+						(destinationStart.y) + y,
+					},
+					(Sprite){' '});
+				canvasSetSprite(
+					destination,
+					(Vector2Int){
+						(destinationStart.x) + x * 2,
+						(destinationStart.y) + y,
+					},
+					sprite);
+			}
+			else
+				canvasSetSprite(
+					destination,
+					(Vector2Int){
+						(destinationStart.x) + x,
+						(destinationStart.y) + y,
+					},
+					sprite);
 		}
 	}
 }

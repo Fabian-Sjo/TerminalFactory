@@ -27,13 +27,13 @@ enum FILL_MODE
 	FILL_NONE,
 	FILL_ALL
 };
-canvasFill(Canvas *canvas,Sprite sprite);
+canvasFill(Canvas *canvas, Sprite sprite);
 void canvasCopyToCanvas(
 	Canvas *destination,
 	Vector2Int destinationPos,
 	Canvas *source,
 	Vector2Int sourceStart,
-	Vector2Int sourceSize);
+	Vector2Int Size);
 
 void cavasDrawRectangle(Canvas *canvas, Vector2Int pos, Vector2Int size, Sprite sprite, enum FILL_MODE fillMode);
 void canvasDrawNineRect(Canvas *canvas, Vector2Int pos, Vector2Int size, NineRect nineRect, enum FILL_MODE fillMode);
