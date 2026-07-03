@@ -24,7 +24,15 @@ void canvasSetDoubleSpaced(Canvas *canvas, bool doDoubleSpace)
 }
 bool canvasGetDoubleSpaced(Canvas *canvas)
 {
+	if (canvas == NULL)
+		return false;
 	return canvas->isDoubleSpaced;
+}
+Vector2Int canvasGetDisplayScale(Canvas *canvas)
+{
+	if (canvas == NULL)
+		return (Vector2Int){1, 1};
+	return (Vector2Int){1 + canvas->isDoubleSpaced, 1};
 }
 void canvasSetSize(Canvas *canvas, Vector2Int size)
 {
@@ -68,6 +76,36 @@ Sprite canvasGetSprite(Canvas *canvas, Vector2Int pos)
 }
 
 void canvasRemove(Canvas *canvas);
+canvasFill(Canvas *canvas, Sprite sprite)
+{
+	for (size_t i = 0; i < canvas->size.x * canvas->size.y; i++)
+	{
+		canvas->sprites[i] = sprite;
+	}
+}
+void canvasCopyToCanvas(
+	Canvas *destination,
+	Vector2Int destinationPos,
+	Canvas *source,
+	Vector2Int sourceStart,
+	Vector2Int sourceSize)
+{
+	for (size_t x = 0; x < sourceSize.x; x++)
+	{
+		for (size_t y = 0; y < sourceSize.y; y++)
+		{
+			bool doubleSpaceResult = source->isDoubleSpaced;
+
+			canvasSetSprite(
+				destination,
+				(Vector2Int){
+					(destinationPos.x) + x * (1 + doubleSpaceResult),
+					(destinationPos.y) + y,
+				},
+				source->sprites[sourceStart.x + x / (1) + sourceStart.y + y * source->size.x]);
+		}
+	}
+}
 
 void cavasDrawRectangle(Canvas *canvas, Vector2Int pos, Vector2Int size, Sprite sprite, enum FILL_MODE fillMode)
 {

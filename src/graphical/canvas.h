@@ -13,6 +13,7 @@ typedef struct NineRect
 Canvas *canvasNew(Vector2Int size);
 void canvasSetDoubleSpaced(Canvas *canvas, bool doDoubleSpace);
 bool canvasGetDoubleSpaced(Canvas *canvas);
+Vector2Int canvasGetDisplayScale(Canvas *canvas);
 
 void canvasSetSize(Canvas *canvas, Vector2Int size);
 Vector2Int canvasGetSize(Canvas *canvas);
@@ -26,6 +27,14 @@ enum FILL_MODE
 	FILL_NONE,
 	FILL_ALL
 };
+canvasFill(Canvas *canvas,Sprite sprite);
+void canvasCopyToCanvas(
+	Canvas *destination,
+	Vector2Int destinationPos,
+	Canvas *source,
+	Vector2Int sourceStart,
+	Vector2Int sourceSize);
+
 void cavasDrawRectangle(Canvas *canvas, Vector2Int pos, Vector2Int size, Sprite sprite, enum FILL_MODE fillMode);
 void canvasDrawNineRect(Canvas *canvas, Vector2Int pos, Vector2Int size, NineRect nineRect, enum FILL_MODE fillMode);
 #endif
