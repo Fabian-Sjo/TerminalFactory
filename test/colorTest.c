@@ -1,4 +1,5 @@
 #include "../src/graphical/color.h"
+#include "../src/utils/systemIndependant.h"
 #include <stdlib.h>
 
 int main(int argc, char const *argv[])
@@ -10,6 +11,6 @@ int main(int argc, char const *argv[])
 	{
 		printf(":%4d\n", (unsigned char)i);
 	}
-
+	
 	return 0;
 }

@@ -72,7 +72,7 @@ Window canvasWindow = {
 	.render = &canvasRender,
 	.mouse = &canvasMouse,
 	.update = &canvasUpdate,
-	.size = {35, 35},
+	.size = {4, 4},
 	.z = 0};
 
 Window palleteWindow = {
@@ -109,8 +109,8 @@ void canvasRender(Window *window, Canvas *canvas)
 		 {(Sprite){'/'}, (Sprite){'|'}, (Sprite){'\\'}}}};
 
 	canvasDrawNineRect(canvas,
-					   vecSubI(window->position, (Vector2Int){0, 0}),
-					   vecAddI(window->size, (Vector2Int){0, 0}),
+					   vecSubI(window->position, (Vector2Int){1, 1}),
+					   vecAddI(window->size, (Vector2Int){2, 2}),
 					   nineRect, FILL_NONE);
 }
 bool canvasMouse(Window *window, Vector2Int localMousePos, Vector2Int globalMousePos)
@@ -368,6 +368,10 @@ void loop(double deltaTime)
 	};
 	if (terminalGetKeyState(KEY_S))
 	{
+		printf("\033[2J"); // clear terminal
+		char *canvasString = canvasToString(artCanvas, true);
+		pasteToClipboard(canvasString);
+		free(canvasString);
 	};
 	if (terminalGetKeyState(KEY_W))
 	{
@@ -386,8 +390,8 @@ void loop(double deltaTime)
 	};
 	if (terminalGetKeyState(KEY_V) == KEY_JUST_PRESSED)
 	{
-		canvasSetDoubleSpaced(screenCanvas, !canvasGetDoubleSpaced(screenCanvas));
-		screenWindow.scale = canvasGetDisplayScale(screenCanvas);
+		// canvasSetDoubleSpaced(screenCanvas, !canvasGetDoubleSpaced(screenCanvas));
+		// screenWindow.scale = canvasGetDisplayScale(screenCanvas);
 	};
 	if (terminalGetKeyState(KEY_SPACE))
 	{

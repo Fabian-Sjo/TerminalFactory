@@ -145,6 +145,41 @@ void canvasDrawRectangle(Canvas *canvas, Vector2Int pos, Vector2Int size, Sprite
 		}
 	}
 }
+char *canvasToString(Canvas *canvas, bool respectDoubleSpace)
+{
+	size_t sizeX = canvas->size.x;
+	if (canvas->isDoubleSpaced && respectDoubleSpace)
+		sizeX *= 2;
+	char *string = malloc(sizeof(char) * sizeX * canvas->size.y + canvas->size.y);
+	int i = 0;
+	for (size_t y = 0; y < canvas->size.y; y++)
+	{
+		for (size_t x = 0; x < sizeX + 1; x++)
+		{
+			char icon = '\n';
+			if (x < sizeX)
+				icon = canvasGetSprite(canvas, (Vector2Int){x, y}).icon;
+			if (icon == 0)
+				icon = ' ';
+			switch (icon)
+			{
+			case ' ':
+				printf("_");
+				break;
+			case '\n':
+				printf("\\n\n");
+				break;
+
+			default:
+				printf("%c", icon);
+				break;
+			}
+			string[i++] = icon;
+		}
+	}
+	string[i - 1] = 0;
+	return string;
+}
 void canvasDrawNineRect(Canvas *canvas, Vector2Int pos, Vector2Int size, NineRect nineRect, enum FILL_MODE fillMode)
 {
 

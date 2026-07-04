@@ -37,4 +37,5 @@ void canvasCopyToCanvas(
 
 void canvasDrawRectangle(Canvas *canvas, Vector2Int pos, Vector2Int size, Sprite sprite, enum FILL_MODE fillMode);
 void canvasDrawNineRect(Canvas *canvas, Vector2Int pos, Vector2Int size, NineRect nineRect, enum FILL_MODE fillMode);
+char *canvasToString(Canvas *canvas, bool respectDoubleSpace);
 #endif
