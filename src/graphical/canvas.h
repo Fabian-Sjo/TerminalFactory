@@ -35,6 +35,6 @@ void canvasCopyToCanvas(
 	Vector2Int sourceStart,
 	Vector2Int Size);
 
-void cavasDrawRectangle(Canvas *canvas, Vector2Int pos, Vector2Int size, Sprite sprite, enum FILL_MODE fillMode);
+void canvasDrawRectangle(Canvas *canvas, Vector2Int pos, Vector2Int size, Sprite sprite, enum FILL_MODE fillMode);
 void canvasDrawNineRect(Canvas *canvas, Vector2Int pos, Vector2Int size, NineRect nineRect, enum FILL_MODE fillMode);
 #endif

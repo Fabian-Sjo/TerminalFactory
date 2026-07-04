@@ -125,7 +125,7 @@ void canvasCopyToCanvas(
 	}
 }
 
-void cavasDrawRectangle(Canvas *canvas, Vector2Int pos, Vector2Int size, Sprite sprite, enum FILL_MODE fillMode)
+void canvasDrawRectangle(Canvas *canvas, Vector2Int pos, Vector2Int size, Sprite sprite, enum FILL_MODE fillMode)
 {
 
 	for (int x = 0; x < size.x; x++)
@@ -133,7 +133,7 @@ void cavasDrawRectangle(Canvas *canvas, Vector2Int pos, Vector2Int size, Sprite 
 		for (int y = 0; y < size.y; y++)
 		{
 
-			if (fillMode == FILL_ALL)
+			if (fillMode == FILL_NONE)
 			{
 				if (x == 0 || y == 0 || x == size.x - 1 || y == size.y - 1)
 					canvasSetSprite(canvas, (Vector2Int){x + pos.x, y + pos.y}, sprite);

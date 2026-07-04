@@ -34,14 +34,17 @@ void *linkedListGet(LinkedList *linkedList, int index);
 struct Node *linkedListcreateNode(LinkedList *linkedList, void *data);
 // Function to insert a new element at the end of the singly linked list
 void linkedListinsertAtEnd(LinkedList *linkedList, void *data);
-
+void linkedListinsertAtFirst(LinkedList *linkedList, void *data);
 // Function to insert a new element at a specific position in the singly linked list
 void linkedListinsertAtPosition(LinkedList *linkedList, void *data, int position);
+
+void linkedListinsertSorted(LinkedList *linkedList, void *data, int (*compare)(void *newItem, void *oldItems));
 
 // Function to delete the first node of the singly linked list
 int linkedListdeleteFromFirst(LinkedList *linkedList);
 // Function to delete the last node of the singly linked list
 int linkedListdeleteFromEnd(LinkedList *linkedList);
+int linkedListdeleteAll(LinkedList *linkedList);
 
 // Function to delete a node at a specific position in the singly linked list
 int linkedListdeleteAtPosition(LinkedList *linkedList, int position);

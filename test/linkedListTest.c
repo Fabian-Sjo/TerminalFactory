@@ -8,18 +8,28 @@ static void verifyList(
 	int count)
 {
 	assert(list->nrOfElements == count);
+	linkedListprint(list);
 
 	for (int i = 0; i < count; i++)
 	{
 		int *value = linkedListGet(list, i);
-
 		assert(value != NULL);
 		assert(*value == expected[i]);
 	}
 
 	assert(linkedListGet(list, count) == NULL);
 }
+static int compareInts(void *newItem, void *oldItem)
+{
+	int a = *(int *)newItem;
+	int b = *(int *)oldItem;
 
+	if (a > b)
+		return 1;
+	if (a < b)
+		return -1;
+	return 0;
+}
 int main(void)
 {
 	printf("Creating list...\n");
@@ -255,6 +265,77 @@ int main(void)
 		assert(value);
 		assert(*value == array[i]);
 	}
+
+	/*
+	 * Sorted insertion
+	 */
+	printf("Testing sorted insertion...\n");
+
+	linkedListDestroy(list);
+	list = linkedListCreate(sizeof(int));
+
+	/* empty list */
+	int s1 = 20;
+	linkedListinsertSorted(list, &s1, compareInts);
+
+	int expectedSorted1[] = {20};
+	verifyList(list, expectedSorted1, 1);
+
+	/* insert before head */
+	int s2 = 10;
+	linkedListinsertSorted(list, &s2, compareInts);
+
+	int expectedSorted2[] = {10, 20};
+	verifyList(list, expectedSorted2, 2);
+
+	/* insert after tail */
+	int s3 = 30;
+	linkedListinsertSorted(list, &s3, compareInts);
+
+	int expectedSorted3[] = {10, 20, 30};
+	verifyList(list, expectedSorted3, 3);
+
+	/* insert in the middle */
+	int s4 = 25;
+	linkedListinsertSorted(list, &s4, compareInts);
+
+	int expectedSorted4[] = {10, 20, 25, 30};
+	verifyList(list, expectedSorted4, 4);
+
+	/* duplicate values */
+	int s5 = 20;
+	linkedListinsertSorted(list, &s5, compareInts);
+
+	int expectedSorted5[] = {10, 20, 20, 25, 30};
+	verifyList(list, expectedSorted5, 5);
+
+	/* random insertion order */
+	linkedListDestroy(list);
+	list = linkedListCreate(sizeof(int));
+
+	int randomValues[] = {7, 3, 9, 1, 5, 8, 4, 2, 6, 0};
+
+	for (int i = 0; i < 10; i++)
+	{
+		linkedListinsertSorted(list, &randomValues[i], compareInts);
+	}
+
+	int expectedSorted6[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	verifyList(list, expectedSorted6, 10);
+
+	/* lots of duplicates */
+	linkedListDestroy(list);
+	list = linkedListCreate(sizeof(int));
+
+	int duplicates[] = {5, 5, 5, 5, 5};
+
+	for (int i = 0; i < 5; i++)
+	{
+		linkedListinsertSorted(list, &duplicates[i], compareInts);
+	}
+
+	int expectedSorted7[] = {5, 5, 5, 5, 5};
+	verifyList(list, expectedSorted7, 5);
 
 	linkedListDestroy(list);
 

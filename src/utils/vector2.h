@@ -1,5 +1,7 @@
 #ifndef VECTOR2_H
 #define VECTOR2_H
+#include <stdbool.h>
+
 
 typedef struct Vector2Float
 {
@@ -21,4 +23,6 @@ Vector2Int vecDivI(Vector2Int vecA, Vector2Int vecB);
 Vector2Int vecMulI(Vector2Int vecA, Vector2Int vecB);
 Vector2Int vecRound(Vector2Float vec);
 Vector2Int vecFloor(Vector2Float vec);
+
+bool isPointInRect(Vector2Int point, Vector2Int cornerA, Vector2Int cornerB);
 #endif

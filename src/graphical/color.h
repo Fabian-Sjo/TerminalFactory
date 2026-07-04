@@ -1,7 +1,6 @@
 #ifndef COLOR_H
 #define COLOR_H
 
-
 #include <stdint.h>
 
 #define COLOR_BLACK (Color){0, 0, 0}
@@ -16,10 +15,15 @@
 
 typedef struct
 {
-	int R;
-	int G;
-	int B;
+	unsigned char R;
+	unsigned char G;
+	unsigned char B;
 } Color;
-int colorEquals(Color a, Color b);
+struct HexColor
+{
+	char hex[7];
+};
 
+int colorEquals(Color a, Color b);
+struct HexColor colorAsHex(Color color);
 #endif

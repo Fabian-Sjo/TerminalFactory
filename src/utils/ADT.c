@@ -80,15 +80,7 @@ LinkedList *linkedListCreate(int dataSize)
 }
 void linkedListDestroy(LinkedList *linkedList)
 {
-	struct Node *current = linkedList->head;
-	struct Node *next;
-
-	while (current != NULL)
-	{
-		next = current->next;
-		free(current);
-		current = next;
-	}
+	linkedListdeleteAll(linkedList);
 	free(linkedList);
 }
 void *linkedListGet(LinkedList *linkedList, int index)
@@ -145,7 +137,6 @@ void linkedListinsertAtEnd(LinkedList *linkedList, void *data)
 // Function to insert a new element at a specific position in the singly linked list
 void linkedListinsertAtPosition(LinkedList *linkedList, void *data, int position)
 {
-	struct Node *newNode = linkedListcreateNode(linkedList, data);
 	if (position == 0)
 	{
 		return linkedListinsertAtFirst(linkedList, data);
@@ -157,15 +148,51 @@ void linkedListinsertAtPosition(LinkedList *linkedList, void *data, int position
 	}
 	if (temp == NULL)
 	{
-		free(newNode);
 		return -1;
 	}
+	struct Node *newNode = linkedListcreateNode(linkedList, data);
 	newNode->next = temp->next;
 	temp->next = newNode;
 	linkedList->nrOfElements++;
 	return;
 }
+void linkedListinsertSorted(
+	LinkedList *linkedList,
+	void *data,
+	int (*compare)(void *newItem, void *oldItem))
+{
+	if (linkedList->head == NULL)
+	{
+		linkedListinsertAtFirst(linkedList, data);
+		return;
+	}
 
+	/* Insert before the current head? */
+	void *headData = (char *)linkedList->head + sizeof(struct Node);
+	if (compare(data, headData) <= 0)
+	{
+		linkedListinsertAtFirst(linkedList, data);
+		return;
+	}
+
+	struct Node *curr = linkedList->head;
+
+	while (curr->next != NULL)
+	{
+		void *nextData = (char *)curr->next + sizeof(struct Node);
+
+		if (compare(data, nextData) <= 0)
+			break;
+
+		curr = curr->next;
+	}
+
+	struct Node *newNode = linkedListcreateNode(linkedList, data);
+
+	newNode->next = curr->next;
+	curr->next = newNode;
+	linkedList->nrOfElements++;
+}
 // Function to delete the first node of the singly linked list
 int linkedListdeleteFromFirst(LinkedList *linkedList)
 {
@@ -178,6 +205,18 @@ int linkedListdeleteFromFirst(LinkedList *linkedList)
 	linkedList->nrOfElements--;
 	free(temp);
 	return 0;
+}
+int linkedListdeleteAll(LinkedList *linkedList)
+{
+	struct Node *current = linkedList->head;
+	struct Node *next;
+
+	while (current != NULL)
+	{
+		next = current->next;
+		free(current);
+		current = next;
+	}
 }
 
 // Function to delete the last node of the singly linked list
@@ -262,7 +301,7 @@ void linkedListprint(LinkedList *linkedList)
 	struct Node *temp = linkedList->head;
 	for (size_t i = 0; i < linkedList->nrOfElements; i++)
 	{
-		printf("%d -> ", linkedListGet(linkedList, i));
+		printf("%d -> ", *(int *)linkedListGet(linkedList, i));
 	}
 
 	printf("NULL\n");
