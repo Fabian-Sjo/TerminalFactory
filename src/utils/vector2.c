@@ -48,3 +48,7 @@ bool isPointInRect(Vector2Int point, Vector2Int cornerA, Vector2Int cornerB)
 			point.x <= bottomRight.x &&
 			point.y <= bottomRight.y);
 }
+Vector2Int rectSizeI(Rect2Int rect)
+{
+	return vecSubI(rect.end, rect.pos);
+}

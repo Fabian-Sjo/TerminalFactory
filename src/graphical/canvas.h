@@ -13,8 +13,12 @@ typedef struct NineRect
 
 // Allocates a new canvas of the requested size and returns it.
 // A null or invalid size is not handled specially.
-Canvas *
-canvasNew(Vector2Int size);
+Canvas *canvasNew(Vector2Int size);
+
+// returns a fake canvas that draws to a portion of the source canvas
+Canvas *canvasProxy(Canvas *source, Rect2Int rect);
+
+void canvasProxySetRect(Canvas *proxy, Rect2Int rect);
 // Enables or disables double-spaced rendering for the canvas.
 // This doubles the logical width when drawing and reading.
 void canvasSetDoubleSpaced(Canvas *canvas, bool doDoubleSpace);
@@ -39,8 +43,8 @@ void canvasSetSprite(Canvas *canvas, Vector2Int pos, Sprite sprite);
 Sprite canvasGetSprite(Canvas *canvas, Vector2Int pos);
 
 // Frees the memory used by the canvas.
-// The current implementation only declares this function and does not provide a body.
-void canvasRemove(Canvas *canvas);
+void canvasFree(Canvas *canvas);
+
 enum FILL_MODE
 {
 	FILL_NONE,
@@ -68,13 +72,19 @@ void canvasDrawNineRect(Canvas *canvas, Vector2Int pos, Vector2Int size, NineRec
 // The returned buffer contains a newline after every row and is null-terminated.
 char *canvasToString(Canvas *canvas, bool respectDoubleSpace);
 
+enum TEXT_ALIGN
+{
+	TEXT_ALIGN_RIGHT = 0,
+	TEXT_ALIGN_LEFT = 1,
+	TEXT_ALIGN_MID = 2,
+};
 struct TextFormat
 {
 	Vector2Int textBoxSize;
 	Color foreground;
 	Color background;
 	bool breakOnWords;
-	bool leftAlign;
+	enum TEXT_ALIGN alignment;
 	bool trimStartWhitespace;
 };
 // Writes a string into the canvas using the supplied text box bounds and colors.

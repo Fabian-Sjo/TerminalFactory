@@ -50,14 +50,36 @@ function styleText({ text, color, bold = false, underline = false }) {
 
 	return `\x1b[${codes.join(";")}m${text}\x1b[0m`;
 }
+const ChunkType = {
+	ERROR: "ERROR",
+	WARNING: "WARNING",
+	OTHER: "OTHER",
+}
 function parseChunk(chunk) {
 	const regex = /(.*\.[hc])\((\d+)\)\s*:\s*(warning|error)\s*(\w*):\s*(.*)/;
 	const parsed = chunk.match(regex);
 	if (parsed == null)
-		return chunk
+		return {
+			type: ChunkType.OTHER,
+			str: chunk
+		}
 	if (parsed.length < 5)
-		return chunk
-	const isError = parsed[3] == "error";
+		return {
+			type: ChunkType.OTHER,
+			str: chunk
+		}
+	let type = ChunkType.OTHER
+	switch (parsed[3]) {
+		case "error":
+			type = ChunkType.ERROR
+			break;
+		case "warning":
+			type = ChunkType.WARNING
+			break;
+		default:
+			type = ChunkType.OTHER
+			break;
+	}
 	const wholeLine = parsed[0];
 	const path = styleText({
 		text: parsed[1],
@@ -68,7 +90,7 @@ function parseChunk(chunk) {
 		color: "white"
 	});
 
-	const error = isError ?
+	const error = type == ChunkType.ERROR ?
 		styleText({
 			text: parsed[3],
 			color: "red"
@@ -80,7 +102,7 @@ function parseChunk(chunk) {
 		text: parsed[4],
 		color: "black"
 	});
-	const errorText = isError ?
+	const errorText = type == ChunkType.ERROR ?
 		styleText({
 			text: parsed[5],
 			color: "red"
@@ -88,7 +110,10 @@ function parseChunk(chunk) {
 			text: parsed[5],
 			color: "yellow"
 		});
-	return `${path}(${line}) ${error} : ${errorText}\n`;
+	return {
+		type: type,
+		str: `${path}(${line}) ${error} : ${errorText}`
+	};
 }
 
 
@@ -150,27 +175,40 @@ console.log("Main file: " + styleText({
 	color: "green",
 	bold: true,
 }));
-console.log("\n\n");
 command = `cl.exe /Zi /Od /W3 /EHsc /std:c11 /Foout\\ /Feout\\program.exe ` +
 	fileString
 
 
-console.log(styleText({
-	text: command,
-	color: "black",
-	bold: true,
-}));
-
+//console.log(styleText({text: command,color: "black",bold: true,}));
 const child = spawn(command, [], {
 	shell: true,
 });
+let spinnerCount = 0
+let spinner = "◜◝◞◟"
+const interval = setInterval(() => {
+	process.stdout.write(`${spinner.charAt(spinnerCount++ % spinner.length)}\r`)
+}, 200);
 
-let output = "";
+
+
+
+
+let output = {
+	errors: [],
+	warnings: [],
+	other: []
+};
 
 child.stdout.setEncoding("utf8");
 child.stdout.on("data", chunk => {
-	output += chunk;
-	process.stdout.write(parseChunk(chunk)); // prints immediately
+
+	let out = parseChunk(chunk);
+	if (out.type == ChunkType.ERROR)
+		output.errors.push(out)
+	if (out.type == ChunkType.WARNING)
+		output.warnings.push(out)
+	if (out.type == ChunkType.OTHER)
+		output.other.push(out)
 });
 
 child.stderr.setEncoding("utf8");
@@ -179,6 +217,21 @@ child.stderr.on("data", chunk => {
 });
 
 child.on("close", code => {
+	clearInterval(interval)
+	console.log(styleText({
+		text: "WARNINGS----------------------------",
+		color: "yellow"
+	}))
+	output.warnings.forEach(element => {
+		console.log(`\t${element.str}`)
+	});
+	console.log(styleText({
+		text: "ERRORS----------------------------",
+		color: "red"
+	}))
+	output.errors.forEach(element => {
+		console.log(`\t${element.str}`)
+	});
 	console.log("Exit code:", code);
 	exit(code)
 	//console.log("Full output:", output);

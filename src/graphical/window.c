@@ -3,7 +3,6 @@
 
 LinkedList *activeWindows = NULL;
 
-
 Vector2Int windowManagerLocalizeMousePos(Vector2Int mousePos, Window window)
 {
 	if (window.parent != NULL)
@@ -26,18 +25,23 @@ bool isMouseInBounds(Vector2Int mousePos, Window window)
 
 void windowManagerRender(Canvas *canvas)
 {
+	Canvas *proxy = canvasProxy(canvas, (Rect2Int){0});
 	for (size_t i = 0; i < activeWindows->nrOfElements; i++)
 	{
 		Window *thisWindow = (Window *)linkedListGet(activeWindows, i);
-		//printf("%d", (thisWindow)->z);
-		thisWindow->render(thisWindow, canvas);
+		canvasProxySetRect(proxy, (Rect2Int){
+									  .pos = thisWindow->position,
+									  .end = vecAddI(thisWindow->size, thisWindow->position)});
+		canvasSetDoubleSpaced(proxy, thisWindow->scale.x == 2);
+		thisWindow->render(thisWindow, proxy);
 	}
+	canvasFree(proxy);
 }
 void windowManagerUpdate(Canvas *canvas)
 {
-
 	for (size_t i = 0; i < activeWindows->nrOfElements; i++)
 	{
+
 		Window *thisWindow = (Window *)linkedListGet(activeWindows, i);
 		if (thisWindow->update != NULL)
 			thisWindow->update(thisWindow);

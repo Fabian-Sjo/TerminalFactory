@@ -5,9 +5,14 @@ typedef struct Canvas
 {
 	Vector2Int size;
 	bool isDoubleSpaced;
+	bool isProxy;
+
 	// 2d array packed in to 1D
 	// sprites[x + y * width]
 	Sprite *sprites;
+	Canvas *sourceCanvas;
+	Vector2Int sourceOffset;
+
 } Canvas;
 
 Canvas *canvasNew(Vector2Int size)
@@ -16,7 +21,48 @@ Canvas *canvasNew(Vector2Int size)
 	newCanvas->size = size;
 	newCanvas->sprites = calloc(size.x * size.y, sizeof(Sprite));
 	newCanvas->isDoubleSpaced = false;
+	newCanvas->isProxy = false;
 	return newCanvas;
+}
+Canvas *canvasProxy(Canvas *source, Rect2Int rect)
+{
+	Canvas *proxy = malloc(sizeof(Canvas));
+	proxy->size = rectSizeI(rect);
+	proxy->sourceOffset = rect.pos;
+	proxy->isProxy = true;
+	proxy->sourceCanvas = source;
+	return proxy;
+}
+void canvasProxySetRect(Canvas *proxy, Rect2Int rect)
+{
+	if (!proxy->isProxy)
+		return;
+	proxy->size = rectSizeI(rect);
+	proxy->sourceOffset = rect.pos;
+}
+void canvasFree(Canvas *canvas)
+{
+	if (!canvas->isProxy)
+		free(canvas->sprites);
+	free(canvas);
+}
+Canvas *canvasGetSource(Canvas *canvas)
+{
+	return canvas->isProxy ? canvasGetSource(canvas->sourceCanvas) : canvas;
+}
+Vector2Int canvasGetSourcePos(Canvas *canvas, Vector2Int pos)
+{
+	return canvas->isProxy ? vecAddI(canvas->sourceOffset, canvasGetSourcePos(canvas->sourceCanvas, pos)) : pos;
+}
+bool canvasPointInBounds(Canvas *canvas, Vector2Int pos)
+{
+	if (canvas == NULL || pos.x >= canvas->size.x || pos.y >= canvas->size.y || pos.x < 0 || pos.y < 0)
+		return false;
+	pos = canvasGetSourcePos(canvas, pos);
+	canvas = canvasGetSource(canvas);
+	if (canvas == NULL || pos.x >= canvas->size.x || pos.y >= canvas->size.y || pos.x < 0 || pos.y < 0)
+		return false;
+	return true;
 }
 void canvasSetDoubleSpaced(Canvas *canvas, bool doDoubleSpace)
 {
@@ -24,12 +70,14 @@ void canvasSetDoubleSpaced(Canvas *canvas, bool doDoubleSpace)
 }
 bool canvasGetDoubleSpaced(Canvas *canvas)
 {
+	canvas = canvasGetSource(canvas);
 	if (canvas == NULL)
 		return false;
 	return canvas->isDoubleSpaced;
 }
 Vector2Int canvasGetDisplayScale(Canvas *canvas)
 {
+	canvas = canvasGetSource(canvas);
 	if (canvas == NULL)
 		return (Vector2Int){1, 1};
 	return (Vector2Int){1 + canvas->isDoubleSpaced, 1};
@@ -42,12 +90,10 @@ void canvasSetSize(Canvas *canvas, Vector2Int size)
 	{
 		return;
 	}
-	canvas->sprites = realloc(canvas->sprites, size.x * size.y * sizeof(Sprite));
-	//		Sprite *newSprites = calloc(size.x * size.y, sizeof(Sprite));
-	//	;
-	//	free(canvas->sprites);
-	//	canvas->sprites = newSprites;
+	if (!canvas->isProxy)
+		canvas->sprites = realloc(canvas->sprites, size.x * size.y * sizeof(Sprite));
 	canvas->size = size;
+	// TODO check if proxy is inbounds
 }
 Vector2Int canvasGetSize(Canvas *canvas)
 {
@@ -56,32 +102,41 @@ Vector2Int canvasGetSize(Canvas *canvas)
 
 void canvasSetSprite(Canvas *canvas, Vector2Int pos, Sprite sprite)
 {
-
-	if (canvas == NULL || pos.x >= canvas->size.x || pos.y >= canvas->size.y)
+	bool proxyDoubleSpace = (canvas->isDoubleSpaced && canvas->isProxy);
+	if (proxyDoubleSpace)
+		pos.x *= 2;
+	if (!canvasPointInBounds(canvas, pos))
 		return;
+	pos = canvasGetSourcePos(canvas, pos);
+	canvas = canvasGetSource(canvas);
+
 	Sprite spriteToSave = canvas->sprites[pos.x + pos.y * canvas->size.x];
 	if (!colorEquals(sprite.colorFore, COLOR_TRANSPARENT))
 		spriteToSave.colorFore = sprite.colorFore;
 	if (!colorEquals(sprite.colorBack, COLOR_TRANSPARENT))
 		spriteToSave.colorBack = sprite.colorBack;
 	spriteToSave.icon = sprite.icon;
-
 	canvas->sprites[pos.x + pos.y * canvas->size.x] = spriteToSave;
 }
 Sprite canvasGetSprite(Canvas *canvas, Vector2Int pos)
 {
-	if (canvas->isDoubleSpaced && (pos.x & 1))
+	if (!canvasPointInBounds(canvas, pos))
+		return ERROR_SPRITE;
+
+	pos = canvasGetSourcePos(canvas, pos);
+	canvas = canvasGetSource(canvas);
+
+	if ((canvas->isDoubleSpaced) && (pos.x & 1))
 		return (Sprite){.icon = ' '};
+
 	return canvas->sprites[pos.x / (1 + canvas->isDoubleSpaced) + pos.y * canvas->size.x];
 }
 
-void canvasRemove(Canvas *canvas);
 canvasFill(Canvas *canvas, Sprite sprite)
 {
-	for (size_t i = 0; i < canvas->size.x * canvas->size.y; i++)
-	{
-		canvas->sprites[i] = sprite;
-	}
+	for (size_t x = 0; x < canvas->size.x; x++)
+		for (size_t y = 0; y < canvas->size.y; y++)
+			canvasSetSprite(canvas, (Vector2Int){x, y}, sprite);
 }
 void canvasCopyToCanvas(
 	Canvas *destination,
@@ -95,7 +150,8 @@ void canvasCopyToCanvas(
 	{
 		for (size_t y = 0; y < size.y; y++)
 		{
-			Sprite sprite = source->sprites[sourceStart.x + x + (sourceStart.y + y) * source->size.x];
+			// Sprite sprite = source->sprites[sourceStart.x + x + (sourceStart.y + y) * source->size.x];
+			Sprite sprite = canvasGetSprite(source, vecAddI(sourceStart, (Vector2Int){x, y}));
 			if (source->isDoubleSpaced)
 			{
 				canvasSetSprite(
@@ -196,72 +252,93 @@ void canvasDrawNineRect(Canvas *canvas, Vector2Int pos, Vector2Int size, NineRec
 	}
 }
 
+bool isWhiteSpace(char c)
+{
+	return (c == ' ' || c == '\n');
+};
 Vector2Int canvasWriteString(Canvas *canvas, char *str, Vector2Int pos, struct TextFormat *format)
 {
 	int i = -1;
 	while (str[++i] != 0)
 		;
 	int stringLength = i;
-	i = -1;
+	i = 0;
 
 	Vector2Int finalBoundingBox = {0};
-	Vector2Int textBoxPos = {0};
-	int startOfWord = 0;
-	int endOfWord = 0;
-	while (str[++i])
+	int lineNr = 0;
+	while (i < stringLength)
 	{
-		if (str[i] == '\n')
+		if (format->trimStartWhitespace)
 		{
-			textBoxPos.x = 0;
-			textBoxPos.y = textBoxPos.y + 1;
-			continue;
+			while (i < stringLength && str[i] == ' ')
+				i++;
 		}
-		if (str[i] == ' ' && textBoxPos.x == 0 && format->trimStartWhitespace)
-		{
-			continue;
-		}
-		if (format->breakOnWords)
-		{
-			if (i >= endOfWord && str[i] != '\n' && str[i] != ' ')
+		int lineStart = i;
+		int offset = 0;
+		int maxLineLength = format->textBoxSize.x;
+
+		int lastWordEnd = -1;
+		int validLineEnd = -1;
+		if (lineStart + maxLineLength > stringLength)
+			validLineEnd = stringLength;
+		else
+			while (validLineEnd == -1)
 			{
-				endOfWord = i;
-				startOfWord = i;
-				char c = str[endOfWord];
-				while (!(str[endOfWord] == NULL | str[endOfWord] == ' ' | str[endOfWord] == '\n'))
+				if (offset >= maxLineLength)
 				{
-					endOfWord++;
+					validLineEnd = lineStart + maxLineLength;
 				}
-			}
-			int wordLength = endOfWord - i;
-			if (i == startOfWord && wordLength + textBoxPos.x > format->textBoxSize.x)
-			{
-				textBoxPos.x = 0;
-				textBoxPos.y = textBoxPos.y + 1;
-			}
-		}
-		Vector2Int thisPos = vecAddI(textBoxPos, pos);
+				if (lineStart + offset >= stringLength)
+				{
+					validLineEnd = lineStart + offset;
+				}
+				if (str[lineStart + offset] == '\n')
+				{
+					validLineEnd = lineStart + offset + 1;
+					break;
+				}
 
-		int offset = thisPos.x + thisPos.y * canvas->size.x;
-		if (textBoxPos.y >= format->textBoxSize.y)
-			return finalBoundingBox;
-		if (offset >= canvas->size.x * canvas->size.y)
-			return finalBoundingBox;
-		finalBoundingBox = (Vector2Int){
-			max(finalBoundingBox.x, textBoxPos.x + 1),
-			max(finalBoundingBox.y, textBoxPos.y + 1)};
-		canvas->sprites[offset] = (Sprite){
-			.icon = str[i],
-			.colorFore = format->foreground,
-			.colorBack = format->background};
+				if (format->breakOnWords &&
+					offset > 0 &&
+					!isWhiteSpace(str[lineStart + offset - 1]) &&
+					isWhiteSpace(str[lineStart + offset]))
+				{
+					lastWordEnd = lineStart + offset;
+				}
+				offset++;
+			}
+		if (lastWordEnd != -1)
+			validLineEnd = min(validLineEnd, lastWordEnd);
+		size_t lineLength = validLineEnd - lineStart;
 
-		// printf("\x1b[%d;%dH", textBoxPos.y + 1, textBoxPos.x + 1);
-		// printf("%c", str[i]);
-		textBoxPos.x++;
-		if (textBoxPos.x >= format->textBoxSize.x)
+		for (size_t charIndex = 0; charIndex < lineLength; charIndex++)
 		{
-			textBoxPos.x = 0,
-			textBoxPos.y++;
+			int xPos = pos.x + charIndex;
+			if (format->alignment == TEXT_ALIGN_LEFT)
+				xPos += maxLineLength - lineLength;
+			if (format->alignment == TEXT_ALIGN_MID)
+				xPos += (maxLineLength - lineLength) / 2;
+			if (xPos >= canvas->size.x)
+				break;
+			int offset = xPos + (pos.y + lineNr) * canvas->size.x;
+
+			if (lineNr >= format->textBoxSize.y)
+				return finalBoundingBox;
+			if (offset >= canvas->size.x * canvas->size.y)
+				return finalBoundingBox;
+			finalBoundingBox = (Vector2Int){
+				max(finalBoundingBox.x, charIndex),
+				max(finalBoundingBox.y, lineNr)};
+			if (str[lineStart + charIndex] != '\n' && xPos >= 0 && offset >= 0)
+				canvasSetSprite(canvas,
+								(Vector2Int){xPos, pos.y},
+								(Sprite){.icon =
+											 str[lineStart + charIndex],
+										 .colorFore = format->foreground,
+										 .colorBack = format->background});
 		}
+		i = validLineEnd;
+		lineNr++;
 	}
 	return finalBoundingBox;
 }

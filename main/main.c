@@ -38,7 +38,6 @@ Entity *testEntity;
 Vector2Int buildPos;
 Vector2Int gameScreenLocalMouse;
 Vector2Int screenSize;
-
 Direction placeDirection = DIR_NORTH;
 TileKind selectedTile = TILE_BELT;
 
@@ -50,7 +49,6 @@ void debugInfoUpdate(Window *window);
 void debugInfoRender(Window *window, Canvas *canvas);
 
 Canvas *screenCanvas;
-Canvas *gameCanvas;
 Window *gameWindow;
 
 void render(double deltaTime, GameData *gameData);
@@ -94,8 +92,8 @@ void testPath()
 		{
 			Vector2Int point = testEntity->path.points[i];
 			Sprite sprite = (Sprite){.icon = '.', COLOR_WHITE, COLOR_BLACK};
-			canvasSetSprite(gameCanvas, worldToScreen(point), sprite);
-			// printf("{%d, %d}", point.x, point.y);
+			// canvasSetSprite(gameCanvas, worldToScreen(point), sprite);
+			//  printf("{%d, %d}", point.x, point.y);
 		}
 
 		Vector2Int newPos = testEntity->path.points[1];
@@ -162,7 +160,10 @@ void loop(double deltaTime)
 	};
 	if (terminalGetKeyState(KEY_C) == KEY_JUST_PRESSED)
 	{
-		canvasSetDoubleSpaced(gameCanvas, !canvasGetDoubleSpaced(gameCanvas));
+		if (gameWindow->scale.x == 1)
+			gameWindow->scale.x = 2;
+		else
+			gameWindow->scale.x = 1;
 	};
 	if (terminalGetKeyState(KEY_V) == KEY_JUST_PRESSED)
 	{
@@ -224,7 +225,7 @@ Vector2Int terminalToScreenSize(Canvas *canvas, Vector2Int terminalSize)
 }
 void screenRender(Window *window, Canvas *canvas)
 {
-	canvasFill(gameCanvas, (Sprite){.icon = ' '});
+	// canvasFill(screenCanvas, (Sprite){.icon = ' '});
 	NineRect nineRect = {
 		{{(Sprite){'\\'}, (Sprite){'|'}, (Sprite){'/'}},
 		 {(Sprite){'='}, (Sprite){'.'}, (Sprite){'='}},
@@ -247,7 +248,8 @@ void screenUpdate(Window *window)
 void gameRender(Window *window, Canvas *canvas)
 {
 
-	canvasFill(gameCanvas, (Sprite){.icon = ' '});
+	canvasFill(canvas, (Sprite){.icon = ' '});
+
 	Vector2Int position = {
 		floor(player->position.x),
 		floor(player->position.y)};
@@ -258,7 +260,7 @@ void gameRender(Window *window, Canvas *canvas)
 		window->size.x - borderSize * 2,
 		window->size.y - borderSize * 2};
 	Vector2Int borders = (Vector2Int){borderSize, borderSize};
-	writeAreaToCanvas(gameData.activeWorld, gameCanvas, vecAddI(position, borders), canvasSize, borders, &gameData);
+	writeAreaToCanvas(gameData.activeWorld, canvas, vecAddI(position, borders), canvasSize, borders, &gameData);
 	testPath();
 	Vector2Int previewSize = getTileSize(selectedTile);
 	Vector2Int previewOriginOffset = getTileOriginOffset(selectedTile);
@@ -285,21 +287,15 @@ void gameRender(Window *window, Canvas *canvas)
 				sprite.colorFore = (Color){0, 30, 0};
 			}
 			sprite.colorBack = COLOR_TRANSPARENT;
-			canvasSetSprite(gameCanvas, worldToScreen(previewPos), sprite);
+			canvasSetSprite(canvas, worldToScreen(previewPos), sprite);
 		}
 	}
 	Sprite sprite = (Sprite){.icon = '@', (Color){100, 100, 0}, COLOR_BLACK};
-	canvasSetSprite(gameCanvas, worldToScreen(testEntity->position), sprite);
-	// canvasSetSprite(gameCanvas, worldToScreen(buildPos), sprite);
+	canvasSetSprite(canvas, worldToScreen(testEntity->position), sprite);
+	// canvasSetSprite(canvas, worldToScreen(buildPos), sprite);
 
 	terminalSetCursorPos((Vector2Int){0, 0});
-	// canvasFill(gameCanvas, sprite);
-	canvasCopyToCanvas(
-		canvas,
-		window->position,
-		gameCanvas,
-		(Vector2Int){0, 0},
-		vecDivI(window->size, window->scale));
+	// canvasFill(canvas, sprite);
 }
 void gameUpdate(Window *window)
 {
@@ -308,19 +304,18 @@ void gameUpdate(Window *window)
 		.x = window->parent->size.x / 2,
 		.y = window->parent->size.y / 2,
 	};
-	canvasSetSize(gameCanvas, size);
 	window->size = size;
 }
 bool gameMouse(Window *window, Vector2Int localMousePos, Vector2Int globalMousePos)
 {
-	terminalSetCursorPos(
+	/*terminalSetCursorPos(
 		vecMulI(
 			vecDivI(
 				globalMousePos,
 				canvasGetDisplayScale(gameCanvas)),
 			canvasGetDisplayScale(gameCanvas)));
-
-	terminalSetCursorVisible(true);
+			terminalSetCursorVisible(true);
+*/
 	gameScreenLocalMouse = localMousePos;
 	buildPos = screenToWorld(localMousePos);
 
@@ -331,18 +326,22 @@ void debugInfoUpdate(Window *window)
 }
 void debugInfoRender(Window *window, Canvas *canvas)
 {
-	char text[] = "this is a longer string    and wraps biglongword";
+	canvasFill(canvas, (Sprite){.icon = 'X'});
+
+	char text[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum";
 	struct TextFormat format = {
-		.textBoxSize = (Vector2Int){7, 300},
+		.textBoxSize = (Vector2Int){40, 30},
 		.foreground = (Color){0},
 		.background = (Color){0},
-		.breakOnWords = false};
-	canvasWriteString(canvas, text, (Vector2Int){30, 10}, &format);
-	format.trimStartWhitespace = true;
-	canvasWriteString(canvas, text, (Vector2Int){30, 20}, &format);
-	format.breakOnWords = true;
-	canvasWriteString(canvas, text, (Vector2Int){30, 30}, &format);
-	canvasWriteString(canvas, text, (Vector2Int){30, 40}, &format);
+		.trimStartWhitespace = true,
+		.breakOnWords = true};
+
+	format.alignment = TEXT_ALIGN_MID;
+	canvasWriteString(canvas, text, (Vector2Int){33, 33}, &format);
+	format.alignment = TEXT_ALIGN_LEFT;
+	canvasWriteString(canvas, text, vecSubI(terminalGetMousePos(), (Vector2Int){10, 10}), &format);
+
+	canvasWriteString(canvas, text, (Vector2Int){56, 56}, &format);
 }
 void start()
 {
@@ -394,7 +393,6 @@ void start()
 		.z = 4};
 	windowManagerAddWindow(debugInfoDef);
 	screenCanvas = canvasNew(screenWindow->size);
-	gameCanvas = canvasNew(gameWindow->size);
 	int chunkGenerateRadius = 3;
 	for (int x = -chunkGenerateRadius; x < chunkGenerateRadius; x++)
 	{

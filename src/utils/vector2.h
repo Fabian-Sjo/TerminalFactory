@@ -35,4 +35,7 @@ Vector2Int vecFloor(Vector2Float vec);
 
 // Returns true when the point lies within the rectangle defined by cornerA and cornerB, including the borders.
 bool isPointInRect(Vector2Int point, Vector2Int cornerA, Vector2Int cornerB);
+
+Vector2Int rectSizeI(Rect2Int rect);
+
 #endif
