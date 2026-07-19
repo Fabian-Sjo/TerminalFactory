@@ -248,7 +248,7 @@ int linkedListdeleteFromEnd(LinkedList *linkedList)
 	return 0;
 }
 
-// Function to delete a node at a specific position in the singly linked list
+
 int linkedListdeleteAtPosition(LinkedList *linkedList, int position)
 {
 	if (linkedList->head == NULL)

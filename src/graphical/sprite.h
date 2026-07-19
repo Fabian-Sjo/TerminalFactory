@@ -22,6 +22,8 @@ typedef enum SpriteId
 	SPRITE_COUNT
 } SpriteID;
 
+// Returns the sprite definition for the requested sprite id.
+// Null is returned for invalid ids.
 Sprite *getSprite(SpriteID id);
 
 #endif

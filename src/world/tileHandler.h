@@ -17,10 +17,13 @@ typedef struct TileHandler
 	int count;
 } TileHandler;
 
-// returns the tile it created, so it can be added to the world
+// Creates a functional tile instance and returns the tile descriptor to add to the world. If the tile kind has no sprite callback, an error tile is returned instead.
 Tile createFunctionTile(TileHandler *handler, TileKind kind, Vector2Int pos, Direction dir, GameData *gameData);
+// Creates a multi-tile instance that shares the provided origin id. The returned tile uses the origin tile's functional state.
 Tile createMultiTile(TileHandler *handler, TileKind kind, Vector2Int pos, Direction dir, int originID);
 
+// Removes the functional tile instance identified by instanceID. Negative ids are ignored.
 void destroyFunctionTile(TileHandler *handler, int instanceID);
+// Advances all functional tiles by one tick using the provided game data. Tiles without a tick callback are skipped.
 void tickFunctionTiles(TileHandler *handler, GameData *gameData);
 #endif

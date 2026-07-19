@@ -14,10 +14,14 @@ typedef struct Chunk
 	GroundTile groundTiles[CHUNK_SIZE][CHUNK_SIZE];
 } Chunk;
 
+// Returns the tile stored at the requested chunk-local coordinates.
 Tile *getChunkTile(Chunk *chunk, int x, int y);
+// Returns the ground tile stored at the requested chunk-local coordinates.
 GroundTile *getChunkGroundTile(Chunk *chunk, int x, int y);
 
+// Writes a tile into the chunk at the requested chunk-local coordinates.
 void setChunkTile(Chunk *chunk, int x, int y, Tile tile);
+// Writes a ground tile into the chunk at the requested chunk-local coordinates.
 void setChunkGroundTile(Chunk *chunk, int x, int y, GroundTile groundTile);
 
 #endif

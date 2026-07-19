@@ -80,32 +80,51 @@ typedef enum Color16
 	COLOR16_WHITE = 15
 } Color16;
 
+// Initializes the terminal subsystem and prepares it for drawing and input.
 void terminalInit();
+// Resets the terminal to a clean state after use.
 void terminalReset();
 
+// Polls and updates the current input state from the terminal.
 void poolInput();
 
+// Sets the active foreground text color.
 void terminalSetTextColor(Color color);
+// Sets the active background text color.
 void terminalSetTextColorBackground(Color color);
+// Sets the active color using the 16-color palette.
 void terminalSetTextColor16(Color16 color);
 
+// Returns the current input state for the supplied key. Valid keys are those defined by the Key enum.
 KeyState terminalGetKeyState(Key key);
+// Returns the current mouse position in terminal coordinates, as reported by the console input stream.
 Vector2Int terminalGetMousePos();
 
+// Shows or hides the terminal mouse cursor.
 void terminalSetMouseVisibility(bool visable);
 
+// Sets the cursor position to the provided coordinates.
 void terminalSetCursorPos(Vector2Int pos);
+// Sets the cursor size as a percentage value supported by the terminal; values are passed straight to the console API.
 void terminalSetCursorSize(int size);
+// Shows or hides the terminal cursor.
 void terminalSetCursorVisible(int visible);
+// Returns the current cursor position.
 Vector2Int terminalGetCursorPos();
 
+// Draws the provided canvas to the terminal.
 void terminalDrawCanvas(Canvas *canvas);
+// Draws a single character at the current cursor position.
 void terminalDrawChar(char character);
+// Draws a null-terminated text string at the current cursor position.
 void terminalDrawText(char *character);
 
+// Flushes the pending terminal draw operations.
 void terminalDraw();
 
+// Clears the terminal display.
 void terminalClear();
 
+// Sets the terminal window title.
 void terminalSetTitle(char *title);
 #endif

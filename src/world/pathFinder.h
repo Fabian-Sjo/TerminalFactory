@@ -16,6 +16,7 @@ struct Path
 	int length;
 };
 
+// Computes a path from start to end through the provided world and returns a result object. The search is limited to a fixed radius and may return a partial path if the destination is unreachable.
 PathFinderPath getPath(Vector2Int start, Vector2Int end, World *world);
 
 

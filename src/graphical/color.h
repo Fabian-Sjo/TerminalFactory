@@ -24,6 +24,8 @@ struct HexColor
 	char hex[7];
 };
 
+// Compares two colors and returns a non-zero value when they are equal.
 int colorEquals(Color a, Color b);
+// Converts a color to a hex-string representation suitable for display or debugging.
 struct HexColor colorAsHex(Color color);
 #endif

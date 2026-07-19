@@ -57,9 +57,13 @@ typedef struct TileDefinition
 
 extern const TileDefinition TILE_DEFS[TILE_COUNT];
 
+// Returns the definition for the requested tile kind, or null for invalid kinds.
 TileDefinition *getTileDefinition(TileKind kind);
+// Returns the sprite to render for the provided tile at the given position. Functional tiles delegate to their definition callback and non-functional tiles use their stored sprite.
 Sprite getTileSprite(Tile tile, Vector2Int pos, GameData gameData);
+// Returns the logical size of the tile kind in world units. Invalid kinds default to {1,1}.
 Vector2Int getTileSize(TileKind kind);
+// Returns the tile's origin offset used when rendering or placing it. Invalid kinds return {0,0}.
 Vector2Int getTileOriginOffset(TileKind kind);
 
 #endif
