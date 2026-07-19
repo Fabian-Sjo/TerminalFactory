@@ -331,11 +331,18 @@ void debugInfoUpdate(Window *window)
 }
 void debugInfoRender(Window *window, Canvas *canvas)
 {
-	char text[] = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz";
-	canvasWriteString(canvas, text, (Vector2Int){30, 10}, (Vector2Int){300, 2}, (Color){0}, (Color){0});
-	canvasWriteString(canvas, text, (Vector2Int){30, 20}, (Vector2Int){6, 300}, (Color){0}, (Color){0});
-	canvasWriteString(canvas, text, (Vector2Int){30, 30}, (Vector2Int){3, 3}, (Color){0}, (Color){0});
-	canvasWriteString(canvas, text, (Vector2Int){30, 40}, (Vector2Int){4, 5}, (Color){0}, (Color){0});
+	char text[] = "this is a longer string    and wraps biglongword";
+	struct TextFormat format = {
+		.textBoxSize = (Vector2Int){7, 300},
+		.foreground = (Color){0},
+		.background = (Color){0},
+		.breakOnWords = false};
+	canvasWriteString(canvas, text, (Vector2Int){30, 10}, &format);
+	format.trimStartWhitespace = true;
+	canvasWriteString(canvas, text, (Vector2Int){30, 20}, &format);
+	format.breakOnWords = true;
+	canvasWriteString(canvas, text, (Vector2Int){30, 30}, &format);
+	canvasWriteString(canvas, text, (Vector2Int){30, 40}, &format);
 }
 void start()
 {

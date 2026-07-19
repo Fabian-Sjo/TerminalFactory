@@ -18,5 +18,5 @@ void *mapGet(Map *map, unsigned long long key);
 void *mapRemove(Map *map, unsigned long long key);
 
 // Destroys the map and frees its internal storage. The current implementation returns 0 on success.
-/int mapDestroy(Map *map);
+int mapDestroy(Map *map);
 #endif

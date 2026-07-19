@@ -2,7 +2,6 @@
 #define VECTOR2_H
 #include <stdbool.h>
 
-
 typedef struct Vector2Float
 {
 	float x, y;
@@ -11,6 +10,10 @@ typedef struct Vector2Int
 {
 	int x, y;
 } Vector2Int;
+typedef struct Rect2Int
+{
+	Vector2Int pos, end;
+} Rect2Int;
 
 // #define vectorMod(vecA, vecB) {vecA.x % vecB.x, vecA.y % vecB.y}
 

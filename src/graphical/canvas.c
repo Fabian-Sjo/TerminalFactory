@@ -195,17 +195,54 @@ void canvasDrawNineRect(Canvas *canvas, Vector2Int pos, Vector2Int size, NineRec
 		}
 	}
 }
-Vector2Int canvasWriteString(Canvas *canvas, char *str, Vector2Int pos, Vector2Int textBoxSize, Color foreground, Color background)
+
+Vector2Int canvasWriteString(Canvas *canvas, char *str, Vector2Int pos, struct TextFormat *format)
 {
 	int i = -1;
+	while (str[++i] != 0)
+		;
+	int stringLength = i;
+	i = -1;
+
 	Vector2Int finalBoundingBox = {0};
+	Vector2Int textBoxPos = {0};
+	int startOfWord = 0;
+	int endOfWord = 0;
 	while (str[++i])
 	{
-		Vector2Int textBoxPos = {i % textBoxSize.x, i / textBoxSize.x};
+		if (str[i] == '\n')
+		{
+			textBoxPos.x = 0;
+			textBoxPos.y = textBoxPos.y + 1;
+			continue;
+		}
+		if (str[i] == ' ' && textBoxPos.x == 0 && format->trimStartWhitespace)
+		{
+			continue;
+		}
+		if (format->breakOnWords)
+		{
+			if (i >= endOfWord && str[i] != '\n' && str[i] != ' ')
+			{
+				endOfWord = i;
+				startOfWord = i;
+				char c = str[endOfWord];
+				while (!(str[endOfWord] == NULL | str[endOfWord] == ' ' | str[endOfWord] == '\n'))
+				{
+					endOfWord++;
+				}
+			}
+			int wordLength = endOfWord - i;
+			if (i == startOfWord && wordLength + textBoxPos.x > format->textBoxSize.x)
+			{
+				textBoxPos.x = 0;
+				textBoxPos.y = textBoxPos.y + 1;
+			}
+		}
 		Vector2Int thisPos = vecAddI(textBoxPos, pos);
 
 		int offset = thisPos.x + thisPos.y * canvas->size.x;
-		if (textBoxPos.y >= textBoxSize.y)
+		if (textBoxPos.y >= format->textBoxSize.y)
 			return finalBoundingBox;
 		if (offset >= canvas->size.x * canvas->size.y)
 			return finalBoundingBox;
@@ -214,8 +251,17 @@ Vector2Int canvasWriteString(Canvas *canvas, char *str, Vector2Int pos, Vector2I
 			max(finalBoundingBox.y, textBoxPos.y + 1)};
 		canvas->sprites[offset] = (Sprite){
 			.icon = str[i],
-			.colorFore = foreground,
-			.colorBack = background};
+			.colorFore = format->foreground,
+			.colorBack = format->background};
+
+		// printf("\x1b[%d;%dH", textBoxPos.y + 1, textBoxPos.x + 1);
+		// printf("%c", str[i]);
+		textBoxPos.x++;
+		if (textBoxPos.x >= format->textBoxSize.x)
+		{
+			textBoxPos.x = 0,
+			textBoxPos.y++;
+		}
 	}
 	return finalBoundingBox;
 }

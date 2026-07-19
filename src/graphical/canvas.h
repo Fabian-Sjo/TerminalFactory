@@ -67,7 +67,17 @@ void canvasDrawNineRect(Canvas *canvas, Vector2Int pos, Vector2Int size, NineRec
 // Converts the canvas contents into a printable string representation.
 // The returned buffer contains a newline after every row and is null-terminated.
 char *canvasToString(Canvas *canvas, bool respectDoubleSpace);
+
+struct TextFormat
+{
+	Vector2Int textBoxSize;
+	Color foreground;
+	Color background;
+	bool breakOnWords;
+	bool leftAlign;
+	bool trimStartWhitespace;
+};
 // Writes a string into the canvas using the supplied text box bounds and colors.
 // The return value is the bounding box of the written area and stops once the box height is exceeded or the canvas bounds are reached.
-Vector2Int canvasWriteString(Canvas *canvas, char *str, Vector2Int pos, Vector2Int textBoxSize, Color foreground, Color background);
+Vector2Int canvasWriteString(Canvas *canvas, char *str, Vector2Int pos, struct TextFormat *format);
 #endif
