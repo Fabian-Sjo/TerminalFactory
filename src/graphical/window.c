@@ -3,10 +3,11 @@
 
 LinkedList *activeWindows = NULL;
 
-Vector2Int localizeMousePos(Vector2Int mousePos, Window window)
+
+Vector2Int windowManagerLocalizeMousePos(Vector2Int mousePos, Window window)
 {
 	if (window.parent != NULL)
-		mousePos = localizeMousePos(mousePos, *window.parent);
+		mousePos = windowManagerLocalizeMousePos(mousePos, *window.parent);
 
 	Vector2Int scale = window.scale;
 	return (Vector2Int){
@@ -16,7 +17,7 @@ Vector2Int localizeMousePos(Vector2Int mousePos, Window window)
 
 bool isMouseInBounds(Vector2Int mousePos, Window window)
 {
-	Vector2Int localMousePos = localizeMousePos(mousePos, window);
+	Vector2Int localMousePos = windowManagerLocalizeMousePos(mousePos, window);
 	return (localMousePos.x >= 0 &&
 			localMousePos.y >= 0 &&
 			localMousePos.x < window.size.x &&
@@ -28,7 +29,7 @@ void windowManagerRender(Canvas *canvas)
 	for (size_t i = 0; i < activeWindows->nrOfElements; i++)
 	{
 		Window *thisWindow = (Window *)linkedListGet(activeWindows, i);
-		printf("%d", (thisWindow)->z);
+		//printf("%d", (thisWindow)->z);
 		thisWindow->render(thisWindow, canvas);
 	}
 }
@@ -51,7 +52,7 @@ bool windowManagerMouse(Vector2Int globalMousePos)
 			continue;
 		if (thisWindow->mouse == NULL)
 			continue;
-		Vector2Int localMousePos = localizeMousePos(globalMousePos, *thisWindow);
+		Vector2Int localMousePos = windowManagerLocalizeMousePos(globalMousePos, *thisWindow);
 		bool wasConsumed = thisWindow->mouse(thisWindow, localMousePos, globalMousePos);
 
 		if (wasConsumed)

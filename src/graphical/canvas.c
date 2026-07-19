@@ -57,7 +57,7 @@ Vector2Int canvasGetSize(Canvas *canvas)
 void canvasSetSprite(Canvas *canvas, Vector2Int pos, Sprite sprite)
 {
 
-	if (pos.x >= canvas->size.x || pos.y >= canvas->size.y)
+	if (canvas == NULL || pos.x >= canvas->size.x || pos.y >= canvas->size.y)
 		return;
 	Sprite spriteToSave = canvas->sprites[pos.x + pos.y * canvas->size.x];
 	if (!colorEquals(sprite.colorFore, COLOR_TRANSPARENT))
@@ -194,4 +194,28 @@ void canvasDrawNineRect(Canvas *canvas, Vector2Int pos, Vector2Int size, NineRec
 				canvasSetSprite(canvas, (Vector2Int){x + pos.x, y + pos.y}, sprite);
 		}
 	}
+}
+Vector2Int canvasWriteString(Canvas *canvas, char *str, Vector2Int pos, Vector2Int textBoxSize, Color foreground, Color background)
+{
+	int i = -1;
+	Vector2Int finalBoundingBox = {0};
+	while (str[++i])
+	{
+		Vector2Int textBoxPos = {i % textBoxSize.x, i / textBoxSize.x};
+		Vector2Int thisPos = vecAddI(textBoxPos, pos);
+
+		int offset = thisPos.x + thisPos.y * canvas->size.x;
+		if (textBoxPos.y >= textBoxSize.y)
+			return finalBoundingBox;
+		if (offset >= canvas->size.x * canvas->size.y)
+			return finalBoundingBox;
+		finalBoundingBox = (Vector2Int){
+			max(finalBoundingBox.x, textBoxPos.x + 1),
+			max(finalBoundingBox.y, textBoxPos.y + 1)};
+		canvas->sprites[offset] = (Sprite){
+			.icon = str[i],
+			.colorFore = foreground,
+			.colorBack = background};
+	}
+	return finalBoundingBox;
 }

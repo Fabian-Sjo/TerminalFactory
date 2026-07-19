@@ -11,8 +11,7 @@ DynamicArray *dynamicArrayCreate(int dataSize, int initialSize)
 	array->capacity = initialSize;
 	array->elements = malloc(initialSize * dataSize);
 
-	printf("Memory successfully allocated using "
-		   "malloc.\n");
+	//printf("Memory successfully allocated using " "malloc.\n");
 	return array;
 }
 int dynamicArrayDestroy(DynamicArray *array)
@@ -267,7 +266,7 @@ int linkedListdeleteAtPosition(LinkedList *linkedList, int position)
 	}
 	if (temp == NULL || temp->next == NULL)
 	{
-		printf("Position out of range\n");
+		//printf("Position out of range\n");
 		return -2;
 	}
 	struct Node *next = temp->next->next;

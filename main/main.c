@@ -5,6 +5,7 @@
 #include "../src/terminal/terminal.h"
 
 #include "../src/graphical/renderer.h"
+#include "../src/graphical/window.h"
 #include "../src/graphical/canvas.h"
 
 #include "../src/game/player.h"
@@ -23,24 +24,8 @@
 #include <math.h>
 #include <signal.h>
 
-Vector2Int screenSafezone = {0, 10};
 int borderSize = 1;
 
-// World *world = NULL;
-// Canvas *canvas = NULL;
-
-// typedef struct GameData
-//{
-//	KeyEvent keyevent;
-//	Player *player;
-//
-//	int frame;
-//
-//	Vector2Int screenSize;
-//
-//	World *activeWorld;
-//	Canvas *canvas;
-// } GameData;
 typedef struct Entity
 {
 	Vector2Int position;
@@ -50,72 +35,38 @@ Sound walkSound;
 GameData gameData;
 Player *player;
 Entity *testEntity;
-Vector2Int cursorPos;
+Vector2Int buildPos;
+Vector2Int gameScreenLocalMouse;
+Vector2Int screenSize;
+
 Direction placeDirection = DIR_NORTH;
 TileKind selectedTile = TILE_BELT;
 
+void screenUpdate(Window *window);
+void screenRender(Window *window, Canvas *canvas);
+void gameUpdate(Window *window);
+void gameRender(Window *window, Canvas *canvas);
+void debugInfoUpdate(Window *window);
+void debugInfoRender(Window *window, Canvas *canvas);
+
+Canvas *screenCanvas;
+Canvas *gameCanvas;
+Window *gameWindow;
+
 void render(double deltaTime, GameData *gameData);
-void tickPlayer(double deltaTime, GameData gameData);
+
 Vector2Int screenToWorld(Vector2Int screenPos)
 {
 
 	return (Vector2Int){
-		screenPos.x + floor(player->position.x) - gameData.screenSize.x / 2,
-		screenPos.y + floor(player->position.y) - gameData.screenSize.y / 2};
+		screenPos.x + floor(player->position.x),
+		screenPos.y + floor(player->position.y)};
 }
 Vector2Int worldToScreen(Vector2Int worldPos)
 {
 	return (Vector2Int){
-		worldPos.x - floor(player->position.x) + gameData.screenSize.x / 2,
-		worldPos.y - floor(player->position.y) + gameData.screenSize.y / 2};
-}
-void debugInfo(double deltaTime, GameData *gameData)
-{
-
-	// printf("\033[2K"); // clear line
-	printf("selected item[%d][%c]: %s        \n", selectedTile, getTileDefinition(selectedTile)->icon, getTileDefinition(selectedTile)->name);
-	printf("screen width: %d height:%d\n", gameData->screenSize.x, gameData->screenSize.y);
-	printf("delta time: %10fs FPS: %3f\n nrOfChunks: %d\n", deltaTime, (1.0 / deltaTime), nrOfChunks(gameData->activeWorld));
-	printf("Frame: %d  ", gameData->frame++);
-	printf("Pos x: %-3f Pos y: %-3f\n", player->position.x, player->position.y);
-	printf("mouse: Pos x: %-3d Pos y: %-3d mouseWorld: Pos x: %-3d Pos y: %-3d\n", cursorPos.x, cursorPos.y, screenToWorld(cursorPos).x, screenToWorld(cursorPos).y);
-	printf("placeDir %d\n", placeDirection);
-
-	for (int i = -30; i < 30; i++)
-	{
-		Vector2Int p = {.x = i, .y = i};
-		Vector2Int toWorld = screenToWorld(p);
-		Vector2Int pp = worldToScreen(toWorld);
-		// assert(p.x == pp.x);
-		// assert(p.y == pp.y);
-	}
-	// KeyEvent keyEvent = gameData->keyevent;
-	// printf("pressed: %-10s released: %-10s held: %-10s \n", keyToString(keyEvent.pressed), keyToString(keyEvent.released), keyToString(keyEvent.held));
-}
-
-void redrawCanvasAndGui(GameData *gameData)
-{
-	printf("\033[2J\033[H");
-	canvasSetSize(gameData->canvas, gameData->screenSize);
-	// gameData->canvas = canvasNew(gameData->screenSize);
-	// canvasSetDoubleSpaced(gameData->canvas, true);
-	Vector2Int screenSize = gameData->screenSize;
-	NineRect nineRect = {
-		{{(Sprite){'\\'}, (Sprite){'|'}, (Sprite){'/'}},
-		 {(Sprite){'='}, (Sprite){'.'}, (Sprite){'='}},
-		 {(Sprite){'/'}, (Sprite){'|'}, (Sprite){'\\'}}}};
-	for (int i = 0; i < borderSize; i++)
-	{
-		canvasDrawNineRect(gameData->canvas, (Vector2Int){i, i}, (Vector2Int){screenSize.x - i * 2, screenSize.y - i * 2}, nineRect, FILL_NONE);
-	}
-	// canvasDrawNineRect(canvas, (Vector2Int){10, 10}, (Vector2Int){3,3}, nineRect, FILL_NONE);
-	// canvasDrawNineRect(canvas, (Vector2Int){13, 10}, (Vector2Int){5,3}, nineRect, FILL_NONE);
-	// canvasDrawNineRect(canvas, (Vector2Int){10, 14}, (Vector2Int){7,7}, nineRect, FILL_NONE);
-	//
-	//
-	// cavasDrawRectangle(canvas, (Vector2Int){2, 2}, (Vector2Int){5, 5}, (Sprite){'#'}, FILL_ALL);
-	// cavasDrawRectangle(canvas, (Vector2Int){8, 2}, (Vector2Int){5, 5}, (Sprite){'+'}, FILL_NONE);
-	// cavasDrawRectangle(canvas, (Vector2Int){20, 20}, (Vector2Int){5, 5}, (Sprite){'#'}, FILL_ALL);
+		worldPos.x - floor(player->position.x),
+		worldPos.y - floor(player->position.y)};
 }
 
 SoundGeneratorResult walkSoundGenerator(double time)
@@ -130,13 +81,11 @@ SoundGeneratorResult walkSoundGenerator(double time)
 	return (SoundGeneratorResult){
 		.val = sin(1 * 3.14 * freq * time) * env, .isFinished = time > 0.2};
 }
-void testPath(double deltaTime)
+void testPath()
 {
 
-	printf("length: %d result: %d\n",
-		   testEntity->path.length,
-		   testEntity->path.result);
-	// printf("pos x: %f y: %f\n",
+	// printf("length: %d result: %d\n",testEntity->path.length,testEntity->path.result);
+	//  printf("pos x: %f y: %f\n",
 	//	   testEntity->position.x,
 	//	   testEntity->position.y);
 	if (testEntity->path.result != PATHFINDER_ERROR && testEntity->path.length > 0)
@@ -145,7 +94,7 @@ void testPath(double deltaTime)
 		{
 			Vector2Int point = testEntity->path.points[i];
 			Sprite sprite = (Sprite){.icon = '.', COLOR_WHITE, COLOR_BLACK};
-			canvasSetSprite(gameData.canvas, worldToScreen(point), sprite);
+			canvasSetSprite(gameCanvas, worldToScreen(point), sprite);
 			// printf("{%d, %d}", point.x, point.y);
 		}
 
@@ -166,107 +115,9 @@ void testPath(double deltaTime)
 void loop(double deltaTime)
 {
 	// gameData.keyevent = getKeyEvent();
-
-	gameData.frame++;
-	gameData.tick++;
-	tickPlayer(deltaTime, gameData);
-
-	worldTick(&gameData);
-	// debugInfo(deltaTime, keyEvent);
-
-	debugInfo(deltaTime, &gameData);
-	render(deltaTime, &gameData);
-
-	int chunkGenerateRadius = 3;
-	for (int x = -chunkGenerateRadius; x < chunkGenerateRadius; x++)
-	{
-		for (int y = -chunkGenerateRadius; y < chunkGenerateRadius; y++)
-			generateChunk(gameData.activeWorld, player->position.x + x * 8, player->position.y + y * 8, &generateMoonChunk);
-	}
-}
-Vector2Int terminalToScreenSize(Canvas *canvas, Vector2Int terminalSize)
-{
-	return (Vector2Int){canvasGetDoubleSpaced(canvas) ? terminalSize.x / 2 : terminalSize.x, terminalSize.y};
-}
-void render(double deltaTime, GameData *gameData)
-{
-	Vector2Int termsize = vecDivI(vecSubI(getTermSize(), screenSafezone), (Vector2Int){1, 1});
-
-	Vector2Int newScreenSize = terminalToScreenSize(gameData->canvas, termsize);
-
-	if (newScreenSize.x != gameData->screenSize.x || newScreenSize.y != gameData->screenSize.y)
-	{
-		gameData->screenSize = newScreenSize;
-		redrawCanvasAndGui(gameData);
-	}
-
-	Vector2Int position = {
-		floor(player->position.x) - floor(gameData->screenSize.x / 2),
-		floor(player->position.y) - floor(gameData->screenSize.y / 2)};
-	//{
-	//	floor(player->position.x) - gameData->screenSize.x / 2,
-	//	floor(player->position.y) - gameData->screenSize.y / 2};
-	Vector2Int canvasSize = (Vector2Int){
-		gameData->screenSize.x - borderSize * 2,
-		gameData->screenSize.y - borderSize * 2};
-	Vector2Int borders = (Vector2Int){borderSize, borderSize};
-	writeAreaToCanvas(gameData->activeWorld, gameData->canvas, vecAddI(position, borders), canvasSize, borders, gameData);
-	testPath(deltaTime);
-	/*for (int x = -1; x <= 1; x++)
-	{
-		for (int y = -1; y <= 1; y++)
-		{
-			Vector2Int playerScreenPos = vecAddI(vecDivI(gameData->screenSize, (Vector2Int){2, 2}), (Vector2Int){x, y});
-
-			canvasSetSprite(gameData->canvas, playerScreenPos, (Sprite){'@', COLOR_RED_CONST, COLOR_BLACK_CONST});
-		}
-	}*/
-	// TODO position desyncs from tileplacement and idk why
-	Vector2Int previewSize = getTileSize(selectedTile);
-	Vector2Int previewOriginOffset = getTileOriginOffset(selectedTile);
-	Vector2Int buildPos = screenToWorld(cursorPos);
-	for (int x = 0; x < previewSize.x; x++)
-	{
-		for (int y = 0; y < previewSize.y; y++)
-		{
-			Vector2Int previewPos = vecAddI(cursorPos, (Vector2Int){x, y});
-			previewPos = vecSubI(previewPos, previewOriginOffset);
-			if (previewPos.x < gameData->screenSize.x && previewPos.y < gameData->screenSize.y)
-			{
-				TileDefinition *def = getTileDefinition(selectedTile);
-				Sprite sprite = (Sprite){def->icon, COLOR_WHITE, COLOR_BLACK};
-				if (def->getSprite != NULL)
-					sprite = def->getSprite(placeDirection, (Vector2Int){x, y}, gameData);
-				if (!canPlaceTile(gameData->activeWorld, vecAddI(buildPos, vecSubI((Vector2Int){x, y}, previewOriginOffset)), selectedTile))
-				{
-					sprite.colorFore = (Color){100, 0, 0};
-				}
-				else
-				{
-					sprite.colorFore = (Color){0, 30, 0};
-				}
-				sprite.colorBack = COLOR_TRANSPARENT;
-				canvasSetSprite(gameData->canvas, previewPos, sprite);
-			}
-		}
-	}
-	Sprite sprite = (Sprite){.icon = '@', (Color){100, 100, 0}, COLOR_BLACK};
-	canvasSetSprite(gameData->canvas, worldToScreen(testEntity->position), sprite);
-
-	terminalSetCursorPos((Vector2Int){0, 0});
-	rendererDrawCanvas(gameData->canvas);
-	rendererFlush();
-	// terminalDrawCanvas(gameData->canvas);
-	// terminalDraw();
-}
-Vector2Int canvasMousePos(Canvas *canvas)
-{
-}
-void tickPlayer(double deltaTime, GameData gameData)
-{
-
 	poolInput();
-	cursorPos = vecDivI(terminalGetMousePos(), (Vector2Int){1 + canvasGetDoubleSpaced(gameData.canvas), 1});
+
+	Vector2Int cursorPos = vecDivI(terminalGetMousePos(), (Vector2Int){1, 1});
 	if (terminalGetKeyState(KEY_ESC) == KEY_JUST_PRESSED)
 	{
 		stopGame();
@@ -311,25 +162,181 @@ void tickPlayer(double deltaTime, GameData gameData)
 	};
 	if (terminalGetKeyState(KEY_C) == KEY_JUST_PRESSED)
 	{
-		canvasSetDoubleSpaced(gameData.canvas, !canvasGetDoubleSpaced(gameData.canvas));
+		canvasSetDoubleSpaced(gameCanvas, !canvasGetDoubleSpaced(gameCanvas));
 	};
 	if (terminalGetKeyState(KEY_V) == KEY_JUST_PRESSED)
 	{
 
 		if (testEntity->path.points != NULL)
 			free(testEntity->path.points);
-		testEntity->path = getPath(testEntity->position, screenToWorld(cursorPos), gameData.activeWorld);
+		testEntity->path = getPath(
+			testEntity->position,
+			screenToWorld(windowManagerLocalizeMousePos(cursorPos, *gameWindow)),
+			gameData.activeWorld);
 	};
 	if (terminalGetKeyState(KEY_SPACE))
 	{
-		removeTile(gameData.activeWorld, screenToWorld(cursorPos));
+		removeTile(gameData.activeWorld, screenToWorld(buildPos));
 	};
 	if (terminalGetKeyState(KEY_MOUSE_1))
 	{
-		placeTile(gameData.activeWorld, screenToWorld(cursorPos), placeDirection, selectedTile);
+		placeTile(gameData.activeWorld, buildPos, placeDirection, selectedTile);
 	};
+
+	gameData.frame++;
+	gameData.tick++;
+	windowManagerUpdate(screenCanvas);
+	windowManagerMouse(cursorPos);
+
+	windowManagerRender(screenCanvas);
+
+	worldTick(&gameData);
+	// debugInfo(deltaTime, keyEvent);
+
+	// render(deltaTime, &gameData);
+	rendererDrawCanvas(screenCanvas);
+	terminalSetCursorVisible(false);
+	rendererFlush();
+	/*
+	printf("selected item[%d][%c]: %s        \n", selectedTile, getTileDefinition(selectedTile)->icon, getTileDefinition(selectedTile)->name);
+	printf("screen width: %d height:%d\n", screenSize.x, screenSize.y);
+	printf("delta time: %10fs FPS: %3f\n nrOfChunks: %d\n", deltaTime, (1.0 / deltaTime), nrOfChunks(gameData.activeWorld));
+	printf("Frame: %d  ", gameData.frame++);
+	printf("Pos x: %-3f Pos y: %-3f\n", player->position.x, player->position.y);
+	printf("gameLocalMouse: Pos x: %-3d Pos y: %-3d\nbuildPos:       Pos x: %-3d Pos y: %-3d\n",
+		   gameScreenLocalMouse.x,
+		   gameScreenLocalMouse.y,
+		   buildPos.x,
+		   buildPos.y);
+	printf("placeDir %d\n", placeDirection);
+	*/
+	int chunkGenerateRadius = 3;
+	for (int x = -chunkGenerateRadius; x < chunkGenerateRadius; x++)
+	{
+		for (int y = -chunkGenerateRadius; y < chunkGenerateRadius; y++)
+			generateChunk(gameData.activeWorld, player->position.x + x * 8, player->position.y + y * 8, &generateMoonChunk);
+	}
 }
 
+Vector2Int terminalToScreenSize(Canvas *canvas, Vector2Int terminalSize)
+{
+	return (Vector2Int){canvasGetDoubleSpaced(canvas) ? terminalSize.x / 2 : terminalSize.x, terminalSize.y};
+}
+void screenRender(Window *window, Canvas *canvas)
+{
+	canvasFill(gameCanvas, (Sprite){.icon = ' '});
+	NineRect nineRect = {
+		{{(Sprite){'\\'}, (Sprite){'|'}, (Sprite){'/'}},
+		 {(Sprite){'='}, (Sprite){'.'}, (Sprite){'='}},
+		 {(Sprite){'/'}, (Sprite){'|'}, (Sprite){'\\'}}}};
+
+	canvasDrawNineRect(canvas,
+					   vecSubI(window->position, (Vector2Int){0, 0}),
+					   vecAddI(window->size, (Vector2Int){0, 0}),
+					   nineRect, FILL_NONE);
+}
+void screenUpdate(Window *window)
+{
+	Vector2Int termsize = vecDivI(getTermSize(), (Vector2Int){1 + canvasGetDoubleSpaced(screenCanvas), 1});
+	termsize.y -= 2;
+
+	canvasSetSize(screenCanvas, termsize);
+	canvasFill(screenCanvas, (Sprite){.icon = ' '});
+	window->size = termsize;
+}
+void gameRender(Window *window, Canvas *canvas)
+{
+
+	canvasFill(gameCanvas, (Sprite){.icon = ' '});
+	Vector2Int position = {
+		floor(player->position.x),
+		floor(player->position.y)};
+	//{
+	//	floor(player->position.x) - screenSize.x / 2,
+	//	floor(player->position.y) - screenSize.y / 2};
+	Vector2Int canvasSize = (Vector2Int){
+		window->size.x - borderSize * 2,
+		window->size.y - borderSize * 2};
+	Vector2Int borders = (Vector2Int){borderSize, borderSize};
+	writeAreaToCanvas(gameData.activeWorld, gameCanvas, vecAddI(position, borders), canvasSize, borders, &gameData);
+	testPath();
+	Vector2Int previewSize = getTileSize(selectedTile);
+	Vector2Int previewOriginOffset = getTileOriginOffset(selectedTile);
+
+	for (int x = 0; x < previewSize.x; x++)
+	{
+		for (int y = 0; y < previewSize.y; y++)
+		{
+			Vector2Int previewPos = vecAddI(buildPos, (Vector2Int){x, y});
+			previewPos = vecSubI(previewPos, previewOriginOffset);
+
+			TileDefinition *def = getTileDefinition(selectedTile);
+			Sprite sprite = (Sprite){def->icon, COLOR_WHITE, COLOR_BLACK};
+			if (def->getSprite != NULL)
+			{
+				sprite = def->getSprite(placeDirection, (Vector2Int){x, y}, &gameData);
+			}
+			if (!canPlaceTile(gameData.activeWorld, vecAddI(buildPos, vecSubI((Vector2Int){x, y}, previewOriginOffset)), selectedTile))
+			{
+				sprite.colorFore = (Color){100, 0, 0};
+			}
+			else
+			{
+				sprite.colorFore = (Color){0, 30, 0};
+			}
+			sprite.colorBack = COLOR_TRANSPARENT;
+			canvasSetSprite(gameCanvas, worldToScreen(previewPos), sprite);
+		}
+	}
+	Sprite sprite = (Sprite){.icon = '@', (Color){100, 100, 0}, COLOR_BLACK};
+	canvasSetSprite(gameCanvas, worldToScreen(testEntity->position), sprite);
+	// canvasSetSprite(gameCanvas, worldToScreen(buildPos), sprite);
+
+	terminalSetCursorPos((Vector2Int){0, 0});
+	// canvasFill(gameCanvas, sprite);
+	canvasCopyToCanvas(
+		canvas,
+		window->position,
+		gameCanvas,
+		(Vector2Int){0, 0},
+		vecDivI(window->size, window->scale));
+}
+void gameUpdate(Window *window)
+{
+	return;
+	Vector2Int size = {
+		.x = window->parent->size.x / 2,
+		.y = window->parent->size.y / 2,
+	};
+	canvasSetSize(gameCanvas, size);
+	window->size = size;
+}
+bool gameMouse(Window *window, Vector2Int localMousePos, Vector2Int globalMousePos)
+{
+	terminalSetCursorPos(
+		vecMulI(
+			vecDivI(
+				globalMousePos,
+				canvasGetDisplayScale(gameCanvas)),
+			canvasGetDisplayScale(gameCanvas)));
+
+	terminalSetCursorVisible(true);
+	gameScreenLocalMouse = localMousePos;
+	buildPos = screenToWorld(localMousePos);
+
+	return true;
+};
+void debugInfoUpdate(Window *window)
+{
+}
+void debugInfoRender(Window *window, Canvas *canvas)
+{
+	char text[] = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz";
+	canvasWriteString(canvas, text, (Vector2Int){30, 10}, (Vector2Int){300, 2}, (Color){0}, (Color){0});
+	canvasWriteString(canvas, text, (Vector2Int){30, 20}, (Vector2Int){6, 300}, (Color){0}, (Color){0});
+	canvasWriteString(canvas, text, (Vector2Int){30, 30}, (Vector2Int){3, 3}, (Color){0}, (Color){0});
+	canvasWriteString(canvas, text, (Vector2Int){30, 40}, (Vector2Int){4, 5}, (Color){0}, (Color){0});
+}
 void start()
 {
 	walkSound = (Sound){
@@ -347,7 +354,40 @@ void start()
 	printf("\33[?25l"); // reset ansi
 	World *world = createWorld();
 	gameData.activeWorld = world;
-	gameData.canvas = canvasNew((Vector2Int){30, 30});
+
+	Window screenWindowDef = {
+		.position = {0, 0},
+		.parent = NULL,
+		.anchor = NULL,
+		.scale = {1, 1},
+		.render = &screenRender,
+		.update = &screenUpdate,
+		.size = {20, 20},
+		.z = 2};
+	Window *screenWindow = windowManagerAddWindow(screenWindowDef);
+	Window gameWindowDef = {
+		.position = {3, 3},
+		.parent = screenWindow,
+		.anchor = NULL,
+		.scale = {1, 1},
+		.render = &gameRender,
+		.update = &gameUpdate,
+		.mouse = &gameMouse,
+		.size = {50, 100},
+		.z = 2};
+	gameWindow = windowManagerAddWindow(gameWindowDef);
+	Window debugInfoDef = {
+		.position = {3, 3},
+		.parent = screenWindow,
+		.anchor = NULL,
+		.scale = {1, 1},
+		.update = &debugInfoUpdate,
+		.render = &debugInfoRender,
+		.size = {10, 20},
+		.z = 4};
+	windowManagerAddWindow(debugInfoDef);
+	screenCanvas = canvasNew(screenWindow->size);
+	gameCanvas = canvasNew(gameWindow->size);
 	int chunkGenerateRadius = 3;
 	for (int x = -chunkGenerateRadius; x < chunkGenerateRadius; x++)
 	{
@@ -390,6 +430,7 @@ void gameInit()
 	// assert(CHUNK_SIZE && !(CHUNK_SIZE & (CHUNK_SIZE - 1)));
 
 	// signal(SIGINT, stopGame);
+
 	soundInit();
 	terminalInit();
 

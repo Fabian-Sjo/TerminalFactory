@@ -133,9 +133,6 @@ int divFloor(int a, int b)
 void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int size, Vector2Int canvasPos, GameData *gameData)
 {
 	Vector2Int posB = vecAddI(posA, size);
-	int width = posB.x - posA.x;
-	int height = posB.y - posA.y;
-	int required = width * height;
 
 	Vector2Int minChunk = {
 		divFloor(posA.x, CHUNK_SIZE),

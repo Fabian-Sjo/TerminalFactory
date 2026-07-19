@@ -187,7 +187,7 @@ void terminalSetTextColorBackground(Color colorBackground)
 	if (colorEquals(colorBackground, currentBackColor) || colorEquals(colorBackground, COLOR_TRANSPARENT))
 		return;
 	currentBackColor = colorBackground;
-	printf("\033[48;2;%d;%d;%dm", currentBackColor.R, currentBackColor.G, currentBackColor.B);
+	//printf("\033[48;2;%d;%d;%dm", currentBackColor.R, currentBackColor.G, currentBackColor.B);
 }
 
 void terminalSetTextColor16(Color16 color)

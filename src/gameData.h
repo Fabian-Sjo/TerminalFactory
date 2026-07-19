@@ -12,11 +12,7 @@ typedef struct GameData
 
 	long frame;
 	long tick;
-
-	Vector2Int screenSize;
-
 	World *activeWorld;
-	Canvas *canvas;
 } GameData;
 
 #endif

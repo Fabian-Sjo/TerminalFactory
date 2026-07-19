@@ -15,6 +15,8 @@ Window *windowManagerGetWindow(int id);
 void windowManagerRemoveWindow(int id);
 void windowManagerRemoveAllWindows();
 
+Vector2Int windowManagerLocalizeMousePos(Vector2Int mousePos, Window window);
+
 struct Window
 {
 	int id;

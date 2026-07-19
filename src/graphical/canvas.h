@@ -10,7 +10,9 @@ typedef struct NineRect
 {
 	Sprite sprites[3][3];
 } NineRect;
-Canvas *canvasNew(Vector2Int size);
+
+Canvas *
+canvasNew(Vector2Int size);
 void canvasSetDoubleSpaced(Canvas *canvas, bool doDoubleSpace);
 bool canvasGetDoubleSpaced(Canvas *canvas);
 Vector2Int canvasGetDisplayScale(Canvas *canvas);
@@ -38,4 +40,5 @@ void canvasCopyToCanvas(
 void canvasDrawRectangle(Canvas *canvas, Vector2Int pos, Vector2Int size, Sprite sprite, enum FILL_MODE fillMode);
 void canvasDrawNineRect(Canvas *canvas, Vector2Int pos, Vector2Int size, NineRect nineRect, enum FILL_MODE fillMode);
 char *canvasToString(Canvas *canvas, bool respectDoubleSpace);
+Vector2Int canvasWriteString(Canvas *canvas, char *str, Vector2Int pos, Vector2Int textBoxSize, Color foreground, Color background);
 #endif
