@@ -1,5 +1,5 @@
 #include "canvas.h"
-#include "stdlib.h"
+#include <stdlib.h>
 #include <stdbool.h>
 typedef struct Canvas
 {
@@ -206,18 +206,18 @@ char *canvasToString(Canvas *canvas, bool respectDoubleSpace)
 	size_t sizeX = canvas->size.x;
 	if (canvas->isDoubleSpaced && respectDoubleSpace)
 		sizeX *= 2;
-	char *string = malloc(sizeof(char) * sizeX * canvas->size.y + canvas->size.y);
+	char *string = malloc(sizeof(UTF8) * sizeX * canvas->size.y + canvas->size.y);
 	int i = 0;
 	for (size_t y = 0; y < canvas->size.y; y++)
 	{
 		for (size_t x = 0; x < sizeX + 1; x++)
 		{
-			char icon = '\n';
+			UTF8 icon;
 			if (x < sizeX)
 				icon = canvasGetSprite(canvas, (Vector2Int){x, y}).icon;
-			if (icon == 0)
-				icon = ' ';
-			switch (icon)
+			if (icon.data[0] == 0)
+				icon.data[0] = ' ';
+			switch (icon.data[0])
 			{
 			case ' ':
 				printf("_");
@@ -227,10 +227,10 @@ char *canvasToString(Canvas *canvas, bool respectDoubleSpace)
 				break;
 
 			default:
-				printf("%c", icon);
+				printf("%s", icon);
 				break;
 			}
-			string[i++] = icon;
+			string[i++] = icon.data;
 		}
 	}
 	string[i - 1] = 0;

@@ -6,12 +6,7 @@
 
 #include "..\utils\vector2.h"
 
-typedef struct
-{
-	Vector2Int pos;
-} SubWindowSettings;
-
-
+void rendererAddUTF8ToBuffer(UTF8 c);
 // Draws the provided canvas through the renderer.
 void rendererDrawCanvas(Canvas *canvas);
 // Flushes the renderer's pending draw operations to the terminal or output target.

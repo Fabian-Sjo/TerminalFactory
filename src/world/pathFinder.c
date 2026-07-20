@@ -177,7 +177,8 @@ static PathFinderPath tracePath(Node nodeDetails[][COL], enum PathFinderResult r
 	return (PathFinderPath){
 		.length = count,
 		.points = revesedPoints,
-		.result = result};
+		.result = result,
+		.progress = 0};
 }
 
 PathFinderPath aStarSearch(int grid[][COL],
@@ -369,7 +370,7 @@ PathFinderPath getPath(Vector2Int start,
 			navGrid[row][col] = TRAVERSE_OPEN;
 
 			if (!isTileWalkable(world, (Vector2Int){start.x + row - MAX_SEARCH_RADIUS,
-												   start.y + col - MAX_SEARCH_RADIUS}))
+													start.y + col - MAX_SEARCH_RADIUS}))
 			{
 				navGrid[row][col] = TRAVERSE_BLOCKED;
 			}

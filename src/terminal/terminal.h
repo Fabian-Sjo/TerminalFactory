@@ -127,4 +127,6 @@ void terminalClear();
 
 // Sets the terminal window title.
 void terminalSetTitle(char *title);
+
+void terminalSetConsoleFont(const wchar_t *fontName, short size);
 #endif

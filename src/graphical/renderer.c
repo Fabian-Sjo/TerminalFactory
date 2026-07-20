@@ -31,6 +31,15 @@ void newLine()
 	addCharToBuffer('\n');
 }
 
+void rendererAddUTF8ToBuffer(UTF8 c)
+{
+
+	int nrOfChar = UTFByteLength(c);
+	for (size_t i = 0; i < nrOfChar; i++)
+	{
+		addCharToBuffer(c.data[i]);
+	}
+}
 void addCharToBuffer(char c)
 {
 	if (bufferSize - 3 <= nrOfElements)
@@ -59,10 +68,10 @@ void addSpriteToBuffer(Sprite sprite)
 	{
 		setColorBack((sprite.colorBack));
 	}
-	char c = sprite.icon;
-	if (c == '\0')
-		c = ' ';
-	addCharToBuffer(c);
+	UTF8 c = sprite.icon;
+	if (c.data[0] == '\0')
+		c.data[0] = ' ';
+	rendererAddUTF8ToBuffer(c);
 }
 void rendererDrawCanvas(Canvas *canvas)
 {
@@ -76,11 +85,7 @@ void rendererDrawCanvas(Canvas *canvas)
 		newLine();
 	}
 }
-void addSpriteIdToBuffer(SpriteID spriteId)
-{
-	Sprite *sprite = getSprite(spriteId);
-	addSpriteToBuffer(*sprite);
-}
+
 void addStrToBuffer(char *str)
 {
 	while (*str)

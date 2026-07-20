@@ -13,6 +13,7 @@ struct Path
 {
 	enum PathFinderResult result;
 	Vector2Int *points;
+	int progress;
 	int length;
 };
 

@@ -187,7 +187,7 @@ void terminalSetTextColorBackground(Color colorBackground)
 	if (colorEquals(colorBackground, currentBackColor) || colorEquals(colorBackground, COLOR_TRANSPARENT))
 		return;
 	currentBackColor = colorBackground;
-	//printf("\033[48;2;%d;%d;%dm", currentBackColor.R, currentBackColor.G, currentBackColor.B);
+	// printf("\033[48;2;%d;%d;%dm", currentBackColor.R, currentBackColor.G, currentBackColor.B);
 }
 
 void terminalSetTextColor16(Color16 color)
@@ -292,5 +292,22 @@ void terminalClear()
 	SetConsoleCursorPosition(stdOutHandle, coordScreen);
 	return;
 }
+void terminalSetConsoleFont(const wchar_t *fontName, short size)
+{
+	SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
+	CONSOLE_FONT_INFOEX fontInfo = {0};
+	fontInfo.cbSize = sizeof(CONSOLE_FONT_INFOEX);
+
+	GetCurrentConsoleFontEx(hConsole, FALSE, &fontInfo);
+
+	wcscpy_s(fontInfo.FaceName, LF_FACESIZE, fontName);
+
+	fontInfo.dwFontSize.X = 0;
+	fontInfo.dwFontSize.Y = size;
+
+	SetCurrentConsoleFontEx(hConsole, FALSE, &fontInfo);
+}
 void terminalSetTitle(char *title);

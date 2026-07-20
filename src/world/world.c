@@ -173,7 +173,7 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 					int globalX = chunkWorldX + localX;
 					int globalY = chunkWorldY + localY;
 
-					Sprite sprite = {' ', COLOR_BLACK, (Color){10, 10, 10}};
+					Sprite sprite = {" ", COLOR_BLACK, (Color){10, 10, 10}};
 
 					if (chunk)
 					{
@@ -182,7 +182,7 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 
 						Tile *tile = getChunkTile(chunk, localX, localY);
 						Sprite tileSprite = getTileSprite(*tile, (Vector2Int){globalX, globalY}, *gameData);
-						if (tileSprite.icon != '\0' && tileSprite.icon != ' ' && !colorEquals(tileSprite.colorFore, COLOR_TRANSPARENT))
+						if (tileSprite.icon.data[0] != '\0' && tileSprite.icon.data[0] != ' ' && !colorEquals(tileSprite.colorFore, COLOR_TRANSPARENT))
 							sprite = tileSprite;
 					}
 

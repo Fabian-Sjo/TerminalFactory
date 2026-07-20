@@ -43,7 +43,7 @@ void conveyorDestroy(int instanceID, GameData *gameData) {
 
 Sprite errorSprite(int instanceID, Vector2Int pos, GameData *gameData)
 {
-	return (Sprite){'X', COLOR_RED, COLOR_BLACK};
+	return (Sprite){"X", COLOR_RED, COLOR_BLACK};
 };
 Sprite bigTileSprite(int instanceID, Vector2Int pos, GameData *gameData)
 {
@@ -53,7 +53,12 @@ Sprite bigTileSprite(int instanceID, Vector2Int pos, GameData *gameData)
 		{'X', '=', 'X'},
 	};
 	Vector2Int offset = vecSubI(pos, worldTileOriginPosFromId(gameData->activeWorld, instanceID));
-	return (Sprite){sprite[offset.y][offset.x], COLOR_WHITE, COLOR_BLACK}; // Edges
+	return (Sprite){
+		.icon.data[0] = sprite[offset.y][offset.x],
+		.colorFore =
+			COLOR_WHITE,
+		.colorBack =
+			COLOR_BLACK}; // Edges
 };
 
 const TileDefinition TILE_DEFS[TILE_COUNT] = {
@@ -111,7 +116,7 @@ Sprite getTileSprite(Tile tile, Vector2Int pos, GameData gameData)
 
 	TileDefinition *def = getTileDefinition(tile.kind);
 	if (def == NULL || def->getSprite == NULL)
-		return (Sprite){'?', COLOR_RED, COLOR_BLACK};
+		return (Sprite){"?", COLOR_RED, COLOR_BLACK};
 	return def->getSprite(tile.entity.instanceID, pos, &gameData);
 }
 Vector2Int getTileOriginOffset(TileKind kind)

@@ -1,5 +1,5 @@
 #include "window.h"
-#include "stdlib.h"
+#include <stdlib.h>
 
 LinkedList *activeWindows = NULL;
 

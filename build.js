@@ -11,6 +11,7 @@ const openFile = process.argv[4];
 const outDir = path.join(workspaceFolder, "out");
 
 
+
 /**
  * @param {{
  *   text: string;
@@ -57,7 +58,59 @@ const ChunkType = {
 	WARNING: "WARNING",
 	OTHER: "OTHER",
 }
-function parseChunk(chunk) {
+function parseLinker(chunk) {
+	const regex = /(.+\.(?:obj|exe))\s*:\s*(\S+)\s*(.*)/;
+	const parsed = chunk.match(regex);
+	if (parsed == null)
+		return {
+			type: ChunkType.OTHER,
+			str: chunk
+		}
+	if (parsed.length < 2)
+		return {
+			type: ChunkType.OTHER,
+			str: chunk
+		}
+	let type = ChunkType.OTHER
+	switch (parsed[2]) {
+		case "fatal":
+		case "error":
+			type = ChunkType.ERROR
+			break;
+		default:
+			type = ChunkType.OTHER
+			break;
+	}
+	const wholeLine = parsed[0];
+	const path = styleText({
+		text: parsed[1],
+		color: "white"
+	});
+
+	const error = type == ChunkType.ERROR ?
+		styleText({
+			text: parsed[2],
+			color: "red"
+		}) : styleText({
+			text: parsed[2],
+			color: "yellow"
+		});
+
+	const errorText = type == ChunkType.ERROR ?
+		styleText({
+			text: parsed[3],
+			color: "red"
+		}) : styleText({
+			text: parsed[3],
+			color: "yellow"
+		});
+	return {
+		type: type,
+		str: `${path} ${error} : ${errorText}`
+	};
+}
+function parseCompiler(chunk) {
+
 	const regex = /(.*\.[hc])\((\d+)\)\s*:\s*(warning|error)\s*(\w*):\s*(.*)/;
 	const parsed = chunk.match(regex);
 	if (parsed == null)
@@ -199,8 +252,7 @@ console.log("Main file: " + styleText({
 
 console.log("\nImports:");
 files.forEach(file => console.log(file))
-command = `cl.exe /Zi /Od /W3 /EHsc /std:c11 /Foout\\ /Feout\\program.exe ` +
-	fileString
+command = `cl.exe /Zi /Od /W3 /EHsc /std:c11 /Foout\\ /Feout\\program.exe ${mainFile} ${fileString}`
 
 
 console.log(styleText({ text: command, color: "black", bold: true, }));
@@ -224,9 +276,25 @@ let output = {
 };
 
 child.stdout.setEncoding("utf8");
+let stage = "compiler";
 child.stdout.on("data", chunk => {
+	const linkerRegex = /^Microsoft \(R\) Incremental Linker Version/;
+	if (chunk.match(linkerRegex)) {
+		stage = "linker"
+	}
+	let out;
+	switch (stage) {
+		case "compiler":
+			out = parseCompiler(chunk)
+			break;
+		case "linker":
+			out = parseLinker(chunk)
+			break;
 
-	let out = parseChunk(chunk);
+		default:
+			out = null
+			break;
+	}
 	if (out.type == ChunkType.ERROR)
 		output.errors.push(out)
 	if (out.type == ChunkType.WARNING)

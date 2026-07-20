@@ -1,22 +1,22 @@
-#include "../src/utils/systemIndependant.h"
-#include "../src/utils/perlin.h"
-#include "../src/utils/map.h"
-#include "../src/utils/vector2.h"
-#include "../src/terminal/terminal.h"
+#include "./utils/systemIndependant.h"
+#include "./utils/perlin.h"
+#include "./utils/map.h"
+#include "./utils/vector2.h"
+#include "./terminal/terminal.h"
 
-#include "../src/graphical/renderer.h"
-#include "../src/graphical/window.h"
-#include "../src/graphical/canvas.h"
+#include "./graphical/renderer.h"
+#include "./graphical/window.h"
+#include "./graphical/canvas.h"
 
-#include "../src/game/player.h"
-#include "../src/game/gameLoop.h"
+#include "./game/player.h"
+#include "./game/gameLoop.h"
 
-#include "../src/world/world.h"
+#include "./world/world.h"
 
-#include "../src/gameData.h"
-#include "../src/world/chunkGenerator.h"
-#include "../src/world/pathFinder.h"
-#include "../src/sound/sound.h"
+#include "./gameData.h"
+#include "./world/chunkGenerator.h"
+#include "./world/pathFinder.h"
+#include "./sound/sound.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -192,7 +192,8 @@ void loop(double deltaTime)
 	for (int x = -chunkGenerateRadius; x < chunkGenerateRadius; x++)
 	{
 		for (int y = -chunkGenerateRadius; y < chunkGenerateRadius; y++)
-			generateChunk(gameData.activeWorld, testEntity->position.x + x * 8, testEntity->position.y + y * 8, &generateCrystalCaveChunk);
+			generateChunk(gameData.activeWorld, testEntity->position.x + x * 8, testEntity->position.y + y * 8,
+						  &generateCraterChunk);
 	}
 }
 
@@ -203,10 +204,11 @@ Vector2Int terminalToScreenSize(Canvas *canvas, Vector2Int terminalSize)
 void screenRender(Window *window, Canvas *canvas)
 {
 	// canvasFill(screenCanvas, (Sprite){.icon = ' '});
+	printf("║");
 	NineRect nineRect = {
-		{{(Sprite){'\\'}, (Sprite){'|'}, (Sprite){'/'}},
-		 {(Sprite){'='}, (Sprite){'.'}, (Sprite){'='}},
-		 {(Sprite){'/'}, (Sprite){'|'}, (Sprite){'\\'}}}};
+		{{(Sprite){"╔", .colorFore = COLOR_WHITE}, (Sprite){"║", .colorFore = COLOR_WHITE}, (Sprite){"╚", .colorFore = COLOR_WHITE}},
+		 {(Sprite){"═", .colorFore = COLOR_WHITE}, (Sprite){"║", .colorFore = COLOR_WHITE}, (Sprite){"═", .colorFore = COLOR_WHITE}},
+		 {(Sprite){"╗", .colorFore = COLOR_WHITE}, (Sprite){"║", .colorFore = COLOR_WHITE}, (Sprite){"╝", .colorFore = COLOR_WHITE}}}};
 
 	canvasDrawNineRect(canvas,
 					   vecSubI(window->position, (Vector2Int){0, 0}),
@@ -250,7 +252,10 @@ void gameRender(Window *window, Canvas *canvas)
 			previewPos = vecSubI(previewPos, previewOriginOffset);
 
 			TileDefinition *def = getTileDefinition(selectedTile);
-			Sprite sprite = (Sprite){def->icon, COLOR_WHITE, COLOR_BLACK};
+			Sprite sprite = (Sprite){
+				.icon.data = def->icon,
+				.colorFore = COLOR_WHITE,
+				.colorBack = COLOR_BLACK};
 			if (def->getSprite != NULL)
 			{
 				sprite = def->getSprite(placeDirection, (Vector2Int){x, y}, &gameData);
@@ -267,30 +272,40 @@ void gameRender(Window *window, Canvas *canvas)
 			canvasSetSprite(canvas, worldToScreen(previewPos), sprite);
 		}
 	}
-	if (testEntity->path.result != PATHFINDER_ERROR && testEntity->path.length > 0)
+	if (testEntity->path.result != PATHFINDER_ERROR && testEntity->path.length > 0 && testEntity->path.progress < testEntity->path.length)
 	{
-		for (size_t i = 0; i < testEntity->path.length; i++)
+		for (size_t i = testEntity->path.progress; i < testEntity->path.length; i++)
 		{
 			Vector2Int point = testEntity->path.points[i];
-			Sprite sprite = (Sprite){.icon = '.', COLOR_WHITE, COLOR_BLACK};
+			Sprite sprite = (Sprite){
+				.icon.data = '.',
+				.colorFore = COLOR_WHITE,
+				.colorBack = COLOR_BLACK};
 			canvasSetSprite(canvas, worldToScreen(point), sprite);
 			//  printf("{%d, %d}", point.x, point.y);
 		}
 
-		Vector2Int newPos = testEntity->path.points[1];
+		Vector2Int newPos = testEntity->path.points[testEntity->path.progress];
 
 		if (isTileWalkable(gameData.activeWorld, newPos))
 		{
 
 			soundPlay(&walkSound, 1, NULL);
 			testEntity->position = newPos;
+			testEntity->path.progress++;
 		}
-		Vector2Int oldTarget = testEntity->path.points[testEntity->path.length - 1];
-		if (testEntity->path.points != NULL)
-			free(testEntity->path.points);
-		testEntity->path = getPath(testEntity->position, oldTarget, gameData.activeWorld);
+		else
+		{
+			if (testEntity->path.points != NULL)
+				free(testEntity->path.points);
+		}
+		// Vector2Int oldTarget = testEntity->path.points[testEntity->path.length - 1];
+		//  testEntity->path = getPath(testEntity->position, oldTarget, gameData.activeWorld);
 	}
-	Sprite sprite = (Sprite){.icon = '@', (Color){100, 100, 0}, COLOR_BLACK};
+	Sprite sprite = (Sprite){
+		.icon = "║",
+		.colorFore = COLOR_WHITE,
+		.colorBack = COLOR_BLACK};
 	canvasSetSprite(canvas, worldToScreen(testEntity->position), sprite);
 	// canvasSetSprite(canvas, worldToScreen(buildPos), sprite);
 
@@ -415,7 +430,6 @@ void start()
 	windowManagerAddWindow(debugInfoDef);
 	screenCanvas = canvasNew(screenWindow->size);
 
-
 	FILE *fptr = fopen("sample-12s.wav", "rb");
 	if (!fptr)
 	{
@@ -445,13 +459,23 @@ void stop()
 	fflush(stdout);
 }
 
-void gameInit()
+/*
+	  > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > -
+A			  v
+A			  v
+A			  v
+< < < < < < < <
+
+*/
+void close(int dummy)
 {
-	// has to be power of 2
-	// assert(CHUNK_SIZE && !(CHUNK_SIZE & (CHUNK_SIZE - 1)));
+	stop();
+	exit(0);
+}
 
-	// signal(SIGINT, stopGame);
-
+int main(int argc, char const *argv[])
+{
+	signal(SIGINT, close);
 	soundInit();
 	terminalInit();
 
@@ -461,21 +485,7 @@ void gameInit()
 
 	addFunctionStop(&stop);
 
-	setFps(60);
+	setFps(20);
 	startGame();
-}
-/*
-	  > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > -
-A			  v
-A			  v
-A			  v
-< < < < < < < <
-
-*/
-
-int main(int argc, char const *argv[])
-{
-
-	gameInit();
 	return 0;
 }
