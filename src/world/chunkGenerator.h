@@ -7,5 +7,6 @@
 // Generates a moon-style chunk for the supplied chunk coordinates.
 // Generates a moon-style chunk for the supplied chunk coordinates.
 Chunk generateMoonChunk(Vector2Int chunkCoordinate);
-
+Chunk generateCraterChunk(Vector2Int chunkCoordinate);
+Chunk generateCrystalCaveChunk(Vector2Int chunkCoordinate);
 #endif

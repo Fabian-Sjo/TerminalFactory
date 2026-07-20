@@ -188,11 +188,11 @@ void loop(double deltaTime)
 		   buildPos.y);
 	printf("placeDir %d\n", placeDirection);
 	*/
-	int chunkGenerateRadius = 3;
+	int chunkGenerateRadius = 30;
 	for (int x = -chunkGenerateRadius; x < chunkGenerateRadius; x++)
 	{
 		for (int y = -chunkGenerateRadius; y < chunkGenerateRadius; y++)
-			generateChunk(gameData.activeWorld, testEntity->position.x + x * 8, testEntity->position.y + y * 8, &generateMoonChunk);
+			generateChunk(gameData.activeWorld, testEntity->position.x + x * 8, testEntity->position.y + y * 8, &generateCrystalCaveChunk);
 	}
 }
 
@@ -414,12 +414,7 @@ void start()
 		.z = 4};
 	windowManagerAddWindow(debugInfoDef);
 	screenCanvas = canvasNew(screenWindow->size);
-	int chunkGenerateRadius = 3;
-	for (int x = -chunkGenerateRadius; x < chunkGenerateRadius; x++)
-	{
-		for (int y = -chunkGenerateRadius; y < chunkGenerateRadius; y++)
-			generateChunk(world, x * 8, y * 8, &generateMoonChunk);
-	}
+
 
 	FILE *fptr = fopen("sample-12s.wav", "rb");
 	if (!fptr)
