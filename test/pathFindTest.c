@@ -13,11 +13,11 @@
 #include "../src/world/pathFinder.h"
 
 #include "../src/gameData.h"
-#include "../src/settings.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <signal.h>
+#include <time.h>
 
 Vector2Int screenSafezone = {0, 10};
 int borderSize = 1;
@@ -42,51 +42,17 @@ Player *player;
 Vector2Int cursorPos;
 Direction placeDirection = DIR_NORTH;
 TileKind selectedTile = TILE_BELT;
+Canvas *canvas;
+World *world;
 
-void redrawCanvasAndGui(GameData *gameData)
-{
-	printf("\033[2J\033[H");
-	gameData->canvas = canvasNew(gameData->screenSize);
-	Vector2Int screenSize = gameData->screenSize;
-	NineRect nineRect = {
-		{{(Sprite){'\\'}, (Sprite){'|'}, (Sprite){'/'}},
-		 {(Sprite){'='}, (Sprite){'.'}, (Sprite){'='}},
-		 {(Sprite){'/'}, (Sprite){'|'}, (Sprite){'\\'}}}};
-	for (int i = 0; i < borderSize; i++)
-	{
-		canvasDrawNineRect(gameData->canvas, (Vector2Int){i, i}, (Vector2Int){screenSize.x - i * 2, screenSize.y - i * 2}, nineRect, FILL_NONE);
-	}
-	// canvasDrawNineRect(canvas, (Vector2Int){10, 10}, (Vector2Int){3,3}, nineRect, FILL_NONE);
-	// canvasDrawNineRect(canvas, (Vector2Int){13, 10}, (Vector2Int){5,3}, nineRect, FILL_NONE);
-	// canvasDrawNineRect(canvas, (Vector2Int){10, 14}, (Vector2Int){7,7}, nineRect, FILL_NONE);
-	//
-	//
-	// cavasDrawRectangle(canvas, (Vector2Int){2, 2}, (Vector2Int){5, 5}, (Sprite){'#'}, FILL_ALL);
-	// cavasDrawRectangle(canvas, (Vector2Int){8, 2}, (Vector2Int){5, 5}, (Sprite){'+'}, FILL_NONE);
-	// cavasDrawRectangle(canvas, (Vector2Int){20, 20}, (Vector2Int){5, 5}, (Sprite){'#'}, FILL_ALL);
-}
-
-Vector2Int screenToWorld(Vector2Int screen)
+void render()
 {
 
-	return vecAddI((Vector2Int){-1, -1}, vecAddI(vecSubI(screen, vecDivI(gameData.screenSize, (Vector2Int){2, 2})), (Vector2Int){0, 0}));
-}
-void render(double deltaTime, GameData *gameData)
-{
-	Vector2Int termsize = getTermSize();
-	termsize = vecDivI(vecSubI(termsize, screenSafezone), (Vector2Int){1 + settingDoHorisontalSpacing, 1});
-	if (termsize.x != gameData->screenSize.x || termsize.y != gameData->screenSize.y)
-	{
-		gameData->screenSize = termsize;
-		redrawCanvasAndGui(gameData);
-	}
-	Vector2Int actualScreenSize = vecSubI(gameData->screenSize, screenSafezone);
-	writeAreaToCanvas(gameData->activeWorld, gameData->canvas, (Vector2Int){-17, -17}, (Vector2Int){gameData->screenSize.x - borderSize * 2, gameData->screenSize.y - borderSize * 2}, (Vector2Int){borderSize, borderSize}, gameData);
+	writeAreaToCanvas(world, canvas, (Vector2Int){0, 0}, (Vector2Int){20, 20}, (Vector2Int){0, 0}, &gameData);
 
-	terminalSetCursorPos((Vector2Int){0, 0});
-	rendererDrawCanvas(gameData->canvas);
+	rendererDrawCanvas(canvas);
 	rendererFlush();
-	// terminalDrawCanvas(gameData->canvas);
+	// terminalDrawCanvas(canvas);
 	// terminalDraw();
 }
 Chunk emptyChunkGenerator(Vector2Int chunkCoord)
@@ -129,29 +95,11 @@ Chunk emptyChunkGenerator(Vector2Int chunkCoord)
 					tile = (Tile){.kind = TILE_NONE, .isFunctional = false, .pos = globalPos, .sprite = {.icon = '#', .colorFore = COLOR_WHITE, .colorBack = (Color){10, 10, 10}}};
 			setChunkTile(&chunk, x, y, tile);
 
-			GroundTile groundTile = (GroundTile){.sprite = {' ', COLOR_BLACK_CONST, {0, 0, 0}}};
+			GroundTile groundTile = (GroundTile){.sprite = {" ", COLOR_BLACK_CONST, {0, 0, 0}}};
 			setChunkGroundTile(&chunk, x, y, groundTile);
 		}
 	}
 	return chunk;
-}
-void gameInit()
-{
-	// has to be power of 2
-	// assert(CHUNK_SIZE && !(CHUNK_SIZE & (CHUNK_SIZE - 1)));
-
-	// signal(SIGINT, stopGame);
-	terminalInit();
-	World *world = createWorld();
-	gameData.activeWorld = world;
-	gameData.canvas = canvasNew((Vector2Int){30, 30});
-	int chunkGenerateRadius = 3;
-	for (int x = -chunkGenerateRadius; x < chunkGenerateRadius; x++)
-	{
-		for (int y = -chunkGenerateRadius; y < chunkGenerateRadius; y++)
-			generateChunk(world, x * CHUNK_SIZE, y * CHUNK_SIZE, &emptyChunkGenerator);
-	}
-	render(1, &gameData);
 }
 
 /*
@@ -165,15 +113,38 @@ A			  v
 
 int main(int argc, char const *argv[])
 {
-	gameInit();
+	terminalInit();
+	world = createWorld();
+	canvas = canvasNew((Vector2Int){30, 30});
+	int chunkGenerateRadius = 3;
+	for (int x = -chunkGenerateRadius; x < chunkGenerateRadius; x++)
+	{
+		for (int y = -chunkGenerateRadius; y < chunkGenerateRadius; y++)
+			generateChunk(world, x * CHUNK_SIZE, y * CHUNK_SIZE, &emptyChunkGenerator);
+	}
 
-	Path path = getPath((Vector2Int){1, 2}, (Vector2Int){19, 19}, gameData.activeWorld);
+	gameData.activeWorld = world;
+	PathFinderPath path;
+	struct timespec start, end;
+	size_t count = 10000;
+	timespec_get(&start, TIME_UTC);
+	for (size_t i = 0; i < count; i++)
+	{
+		path = getPath((Vector2Int){1, 2}, (Vector2Int){19, 19}, gameData.activeWorld);
+	}
+	timespec_get(&end, TIME_UTC);
+	double elapsed =
+		(end.tv_sec - start.tv_sec) +
+		(end.tv_nsec - start.tv_nsec) / 1e9;
+
+	printf("time    %.9fs\ntimePer %.9fs", elapsed, elapsed / count);
+	return;
 	printf("length: %d result: %d\n", path.length, path.result);
 	if (path.length > 0)
 		for (size_t i = 0; i < path.length; i++)
 		{
 			Vector2Int point = path.points[i];
-			printf("point %d : {%d, %d}\n", i, point.x, point.y);
+			// printf("%30spoint %2d : {%2d, %2d}\n", "", i, point.x, point.y);
 
 			setGroundTile(
 				gameData.activeWorld,
@@ -183,8 +154,7 @@ int main(int argc, char const *argv[])
 					.sprite = (Sprite){
 						.icon = '.',
 						.colorFore = COLOR_WHITE}});
-			render(1, &gameData);
 		}
-
+	render();
 	return 0;
 }
