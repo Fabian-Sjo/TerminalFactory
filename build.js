@@ -6,8 +6,10 @@ const { exit } = require("process");
 
 
 const workspaceFolder = process.argv[2];
-const openFile = process.argv[3];
+const fallbackMain = process.argv[3];
+const openFile = process.argv[4];
 const outDir = path.join(workspaceFolder, "out");
+
 
 /**
  * @param {{
@@ -116,18 +118,6 @@ function parseChunk(chunk) {
 	};
 }
 
-
-function filterDir(dir) {
-
-	if (dir.name.substring(0, 1) == ".")
-		return false
-	return true
-}
-function filterFile(file) {
-	if (file.name.split(".").pop() != "c")
-		return false
-	return true
-}
 function isInDirectory(filePath, directoryPath) {
 	const file = path.resolve(filePath);
 	const dir = path.resolve(directoryPath);
@@ -138,48 +128,82 @@ function isInDirectory(filePath, directoryPath) {
 		!relative.startsWith('..') &&
 		!path.isAbsolute(relative);
 }
-function getFiles(workingDir, openFile) {
-	let sourceDir = `${workingDir}\\src`
-	let mainFile = `${workingDir}\\main\\main.c`;
-	if (!isInDirectory(openFile, sourceDir))
-		mainFile = openFile;
+const foundFiles = new Set();
 
-	return getCFiles(sourceDir).concat([mainFile])
-}
-function getCFiles(pathStart) {
-	//console.log("looking in dir " + pathStart)
-	var filesToCheck = fs.readdirSync(pathStart, { withFileTypes: true });
-	//console.log(filesToCheck)
-	var files = []
-	for (const file of filesToCheck) {
-		let fullPath = file.parentPath + "\\" + file.name;
+function getImports(filePath) {
+	if (filePath == null)
+		return [];
 
-		if (true) {
-			if (file.isDirectory()) {
-				if (filterDir(file))
-					files = files.concat(getCFiles(fullPath));
-			}
-			else if (filterFile(file))
-				files.push(fullPath);
+	filePath = path.normalize(filePath);
+
+	if (!fs.existsSync(filePath))
+		return [];
+
+	if (foundFiles.has(filePath))
+		return [];
+
+	foundFiles.add(filePath);
+	getImports(getCFile(filePath));
+	const data = fs.readFileSync(filePath, "utf8");
+
+	for (const line of data.split(/\r?\n/)) {
+		const regex = /^#include "(.*h)"$/;
+		const parsed = line.match(regex);
+
+		if (parsed != null) {
+			const fullPath = path.resolve(path.dirname(filePath), parsed[1]);
+
+			getImports(fullPath);
 		}
 	}
-	return files;
 }
-let files = getFiles(workspaceFolder, openFile)
+function getCFile(headerPath) {
+	const cPath = headerPath.replace(/\.[^.]+$/, ".c");
+
+	if (fs.existsSync(cPath)) {
+		return cPath;
+	}
+
+	return null;
+}
+function isMainFile(filepath) {
+	if (filepath == null)
+		return false;
+	const data = fs.readFileSync(filepath, "utf8");
+
+	// Remove comments
+	const clean = data
+		.replace(/\/\/.*$/gm, "")
+		.replace(/\/\*[\s\S]*?\*\//g, "");
+
+	return /\bint\s+main\s*\([^)]*\)/.test(clean);
+}
+let mainFile = null
+if (isMainFile(openFile))
+	mainFile = openFile
+else if (isMainFile(fallbackMain))
+	mainFile = fallbackMain
+if (mainFile == null)
+	return -1
+getImports(mainFile)
+let files = Array.from(foundFiles).filter(p => path.resolve(p) !== path.resolve(mainFile)).filter(p => p.endsWith(".c"))
 let fileString = files.reduce((string, item) => `${string} ${item}`)
 let command;
 
 console.log("Building project");
 console.log("Main file: " + styleText({
-	text: files[files.length - 1],
+	text: mainFile,
 	color: "green",
 	bold: true,
 }));
+
+console.log("\nImports:");
+files.forEach(file => console.log(file))
 command = `cl.exe /Zi /Od /W3 /EHsc /std:c11 /Foout\\ /Feout\\program.exe ` +
 	fileString
 
 
-//console.log(styleText({text: command,color: "black",bold: true,}));
+console.log(styleText({ text: command, color: "black", bold: true, }));
 const child = spawn(command, [], {
 	shell: true,
 });
@@ -233,6 +257,7 @@ child.on("close", code => {
 		console.log(`\t${element.str}`)
 	});
 	console.log("Exit code:", code);
+	//fs.readFileSync(0, "utf8");
 	exit(code)
 	//console.log("Full output:", output);
 });
