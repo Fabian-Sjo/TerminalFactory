@@ -2,16 +2,17 @@
 #define GAMEDATA_H
 
 #include "game/player.h"
-//#include "game/input.h"
+// #include "game/input.h"
 #include "world/world.h"
 #include "graphical/canvas.h"
 
 typedef struct GameData
 {
-	//KeyEvent keyevent
+	// KeyEvent keyevent
 
 	long frame;
 	long tick;
+	double deltaTime;
 	World *activeWorld;
 } GameData;
 

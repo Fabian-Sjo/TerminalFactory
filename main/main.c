@@ -86,33 +86,10 @@ void testPath()
 	//  printf("pos x: %f y: %f\n",
 	//	   testEntity->position.x,
 	//	   testEntity->position.y);
-	if (testEntity->path.result != PATHFINDER_ERROR && testEntity->path.length > 0)
-	{
-		for (size_t i = 0; i < testEntity->path.length; i++)
-		{
-			Vector2Int point = testEntity->path.points[i];
-			Sprite sprite = (Sprite){.icon = '.', COLOR_WHITE, COLOR_BLACK};
-			// canvasSetSprite(gameCanvas, worldToScreen(point), sprite);
-			//  printf("{%d, %d}", point.x, point.y);
-		}
-
-		Vector2Int newPos = testEntity->path.points[1];
-
-		if (isTileWalkable(gameData.activeWorld, newPos))
-		{
-
-			soundPlay(&walkSound, 1, NULL);
-			testEntity->position = newPos;
-		}
-		Vector2Int oldTarget = testEntity->path.points[testEntity->path.length - 1];
-		if (testEntity->path.points != NULL)
-			free(testEntity->path.points);
-		testEntity->path = getPath(testEntity->position, oldTarget, gameData.activeWorld);
-	}
 }
 void loop(double deltaTime)
 {
-	// gameData.keyevent = getKeyEvent();
+	gameData.deltaTime = deltaTime;
 	poolInput();
 
 	Vector2Int cursorPos = vecDivI(terminalGetMousePos(), (Vector2Int){1, 1});
@@ -215,7 +192,7 @@ void loop(double deltaTime)
 	for (int x = -chunkGenerateRadius; x < chunkGenerateRadius; x++)
 	{
 		for (int y = -chunkGenerateRadius; y < chunkGenerateRadius; y++)
-			generateChunk(gameData.activeWorld, player->position.x + x * 8, player->position.y + y * 8, &generateMoonChunk);
+			generateChunk(gameData.activeWorld, testEntity->position.x + x * 8, testEntity->position.y + y * 8, &generateMoonChunk);
 	}
 }
 
@@ -290,6 +267,29 @@ void gameRender(Window *window, Canvas *canvas)
 			canvasSetSprite(canvas, worldToScreen(previewPos), sprite);
 		}
 	}
+	if (testEntity->path.result != PATHFINDER_ERROR && testEntity->path.length > 0)
+	{
+		for (size_t i = 0; i < testEntity->path.length; i++)
+		{
+			Vector2Int point = testEntity->path.points[i];
+			Sprite sprite = (Sprite){.icon = '.', COLOR_WHITE, COLOR_BLACK};
+			canvasSetSprite(canvas, worldToScreen(point), sprite);
+			//  printf("{%d, %d}", point.x, point.y);
+		}
+
+		Vector2Int newPos = testEntity->path.points[1];
+
+		if (isTileWalkable(gameData.activeWorld, newPos))
+		{
+
+			soundPlay(&walkSound, 1, NULL);
+			testEntity->position = newPos;
+		}
+		Vector2Int oldTarget = testEntity->path.points[testEntity->path.length - 1];
+		if (testEntity->path.points != NULL)
+			free(testEntity->path.points);
+		testEntity->path = getPath(testEntity->position, oldTarget, gameData.activeWorld);
+	}
 	Sprite sprite = (Sprite){.icon = '@', (Color){100, 100, 0}, COLOR_BLACK};
 	canvasSetSprite(canvas, worldToScreen(testEntity->position), sprite);
 	// canvasSetSprite(canvas, worldToScreen(buildPos), sprite);
@@ -299,10 +299,10 @@ void gameRender(Window *window, Canvas *canvas)
 }
 void gameUpdate(Window *window)
 {
-	return;
+	window->position = (Vector2Int){1, 1};
 	Vector2Int size = {
-		.x = window->parent->size.x / 2,
-		.y = window->parent->size.y / 2,
+		.x = window->parent->size.x,
+		.y = window->parent->size.y,
 	};
 	window->size = size;
 }
@@ -323,25 +323,46 @@ bool gameMouse(Window *window, Vector2Int localMousePos, Vector2Int globalMouseP
 };
 void debugInfoUpdate(Window *window)
 {
+	window->position.x = window->parent->size.x - window->size.x - 2;
 }
 void debugInfoRender(Window *window, Canvas *canvas)
 {
-	canvasFill(canvas, (Sprite){.icon = 'X'});
-
-	char text[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum";
+	// canvasFill(canvas, (Sprite){.icon = '-'});
+	//  char text[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum";
+	//   char text[] = "01234567891";
+	Vector2Int pos = {0, 0};
 	struct TextFormat format = {
-		.textBoxSize = (Vector2Int){40, 30},
-		.foreground = (Color){0},
-		.background = (Color){0},
+		.textBoxSize = window->size,
+		.foreground = (Color){255, 255, 255},
+		.background = (Color){10, 10, 10},
 		.trimStartWhitespace = true,
-		.breakOnWords = true};
+		.breakOnWords = true,
+		.alignment = TEXT_ALIGN_RIGHT};
 
-	format.alignment = TEXT_ALIGN_MID;
-	canvasWriteString(canvas, text, (Vector2Int){33, 33}, &format);
-	format.alignment = TEXT_ALIGN_LEFT;
-	canvasWriteString(canvas, text, vecSubI(terminalGetMousePos(), (Vector2Int){10, 10}), &format);
+	// printf("\033[2K"); // clear line
+	char buffer[48];
 
-	canvasWriteString(canvas, text, (Vector2Int){56, 56}, &format);
+	snprintf(buffer, sizeof(buffer), "selected item[%d][%c]: %s", selectedTile, getTileDefinition(selectedTile)->icon, getTileDefinition(selectedTile)->name);
+	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
+	snprintf(buffer, sizeof(buffer), "screen width: %d height:%d", screenSize.x, screenSize.y);
+	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
+	snprintf(buffer, sizeof(buffer), "FPS: %3d", (int)(1.0 / gameData.deltaTime));
+	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
+	snprintf(buffer, sizeof(buffer), "nrOfChunks: %d", nrOfChunks(gameData.activeWorld));
+	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
+	snprintf(buffer, sizeof(buffer), "Frame: %d", gameData.frame++);
+	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
+	snprintf(buffer, sizeof(buffer), "Pos x: %-3d\nPos y: %-3d", (int)player->position.x, (int)player->position.y);
+	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
+	snprintf(buffer, sizeof(buffer), "placeDir %d", placeDirection);
+	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
+
+	/*
+format.alignment = TEXT_ALIGN_LEFT;
+canvasWriteString(canvas, text, vecSubI(terminalGetMousePos(), (Vector2Int){10, 10}), &format);
+
+canvasWriteString(canvas, text, (Vector2Int){56, 56}, &format);
+*/
 }
 void start()
 {
@@ -389,7 +410,7 @@ void start()
 		.scale = {1, 1},
 		.update = &debugInfoUpdate,
 		.render = &debugInfoRender,
-		.size = {10, 20},
+		.size = {32, 20},
 		.z = 4};
 	windowManagerAddWindow(debugInfoDef);
 	screenCanvas = canvasNew(screenWindow->size);

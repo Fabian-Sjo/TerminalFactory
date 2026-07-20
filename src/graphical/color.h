@@ -6,7 +6,7 @@
 #define COLOR_BLACK (Color){0, 0, 0}
 #define COLOR_RED (Color){255, 0, 0}
 #define COLOR_WHITE (Color){255, 255, 255}
-#define COLOR_TRANSPARENT (Color){-1, -1, -1}
+#define COLOR_TRANSPARENT (Color){-1, -2, -3}
 
 #define COLOR_BLACK_CONST {0, 0, 0}
 #define COLOR_RED_CONST {255, 0, 0}

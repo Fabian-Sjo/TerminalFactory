@@ -173,7 +173,7 @@ void writeAreaToCanvas(World *world, Canvas *canvas, Vector2Int posA, Vector2Int
 					int globalX = chunkWorldX + localX;
 					int globalY = chunkWorldY + localY;
 
-					Sprite sprite = {'-', COLOR_RED, COLOR_RED};
+					Sprite sprite = {' ', COLOR_BLACK, (Color){10, 10, 10}};
 
 					if (chunk)
 					{

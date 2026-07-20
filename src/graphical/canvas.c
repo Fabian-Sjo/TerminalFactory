@@ -258,6 +258,18 @@ bool isWhiteSpace(char c)
 };
 Vector2Int canvasWriteString(Canvas *canvas, char *str, Vector2Int pos, struct TextFormat *format)
 {
+	struct TextFormat fallback = {
+		.textBoxSize = (Vector2Int){0, 0},
+		.foreground = (Color){0},
+		.background = (Color){0},
+		.trimStartWhitespace = true,
+		.breakOnWords = true,
+		.alignment = TEXT_ALIGN_LEFT};
+	if (format == NULL)
+		format = &fallback;
+	format->textBoxSize.x = format->textBoxSize.x > 0 ? format->textBoxSize.x : 10000000;
+	format->textBoxSize.y = format->textBoxSize.y > 0 ? format->textBoxSize.y : 10000000;
+
 	int i = -1;
 	while (str[++i] != 0)
 		;
@@ -313,25 +325,26 @@ Vector2Int canvasWriteString(Canvas *canvas, char *str, Vector2Int pos, struct T
 
 		for (size_t charIndex = 0; charIndex < lineLength; charIndex++)
 		{
-			int xPos = pos.x + charIndex;
-			if (format->alignment == TEXT_ALIGN_LEFT)
-				xPos += maxLineLength - lineLength;
-			if (format->alignment == TEXT_ALIGN_MID)
-				xPos += (maxLineLength - lineLength) / 2;
-			if (xPos >= canvas->size.x)
-				break;
-			int offset = xPos + (pos.y + lineNr) * canvas->size.x;
+			Vector2Int spritePos = {pos.x + charIndex, pos.y + lineNr};
 
+			if (format->alignment == TEXT_ALIGN_RIGHT)
+				spritePos.x += maxLineLength - lineLength;
+			if (format->alignment == TEXT_ALIGN_MID)
+				spritePos.x += (maxLineLength - lineLength) / 2;
+			if (spritePos.x >= canvas->size.x)
+				break;
+			if (spritePos.x < 0 && spritePos.y < 0)
+				continue;
 			if (lineNr >= format->textBoxSize.y)
 				return finalBoundingBox;
 			if (offset >= canvas->size.x * canvas->size.y)
 				return finalBoundingBox;
 			finalBoundingBox = (Vector2Int){
-				max(finalBoundingBox.x, charIndex),
-				max(finalBoundingBox.y, lineNr)};
-			if (str[lineStart + charIndex] != '\n' && xPos >= 0 && offset >= 0)
+				max(finalBoundingBox.x, charIndex + 1),
+				max(finalBoundingBox.y, lineNr + 1)};
+			if (str[lineStart + charIndex] != '\n')
 				canvasSetSprite(canvas,
-								(Vector2Int){xPos, pos.y},
+								spritePos,
 								(Sprite){.icon =
 											 str[lineStart + charIndex],
 										 .colorFore = format->foreground,
