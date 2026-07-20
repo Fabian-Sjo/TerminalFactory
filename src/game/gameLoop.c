@@ -15,6 +15,7 @@ void (*functionsStart[5])(); // TODO hardcoded 5
 
 int nrOfFunctionsLoop = 0;
 void (*functionsLoop[5])(long deltaTime); // TODO hardcoded 5
+double functionsLoopTargetDelta[5];		  // TODO hardcoded 5
 
 int nrOfFunctionsStop = 0;
 void (*functionsStop[5])(); // TODO hardcoded 5
@@ -28,8 +29,9 @@ void addFunctionStart(void (*function)())
 {
 	functionsStart[nrOfFunctionsStart++] = function;
 }
-void addFunctionLoop(void (*function)(long deltaTime))
+void addFunctionLoop(void (*function)(double deltaTime), double targetDelta)
 {
+	functionsLoopTargetDelta[nrOfFunctionsLoop] = targetDelta;
 	functionsLoop[nrOfFunctionsLoop++] = function;
 }
 void addFunctionStop(void (*function)())
@@ -38,38 +40,39 @@ void addFunctionStop(void (*function)())
 }
 void gameLoop()
 {
-    struct timespec frameStart, now;
+	struct timespec frameStart, now;
 
-    long targetFrameNs = NS_PER_SEC / targerFps;
+	long targetFrameNs = NS_PER_SEC / targerFps;
 
-    while (isRunning)
-    {
-        timespec_get(&frameStart, TIME_UTC);
+	while (isRunning)
+	{
+		timespec_get(&frameStart, TIME_UTC);
 
-        long nsDiff =
-            (frameStart.tv_sec - lastTime.tv_sec) * NS_PER_SEC +
-            (frameStart.tv_nsec - lastTime.tv_nsec);
+		long nsDiff =
+			(frameStart.tv_sec - lastTime.tv_sec) * NS_PER_SEC +
+			(frameStart.tv_nsec - lastTime.tv_nsec);
 
-        lastTime = frameStart;
+		lastTime = frameStart;
 
-        for (int i = 0; i < nrOfFunctionsLoop; i++)
-        {
-            functionsLoop[i](((double)nsDiff)/NS_PER_SEC);
-        }
+		for (int i = 0; i < nrOfFunctionsLoop; i++)
+		{
+			this should wait for fastest loop
+			functionsLoop[i](((double)nsDiff) / NS_PER_SEC);
+		}
 
-        timespec_get(&now, TIME_UTC);
+		timespec_get(&now, TIME_UTC);
 
-        long frameTime =
-            (now.tv_sec - frameStart.tv_sec) * NS_PER_SEC +
-            (now.tv_nsec - frameStart.tv_nsec);
+		long frameTime =
+			(now.tv_sec - frameStart.tv_sec) * NS_PER_SEC +
+			(now.tv_nsec - frameStart.tv_nsec);
 
-        long sleepNs = targetFrameNs - frameTime;
+		long sleepNs = targetFrameNs - frameTime;
 
-        if (sleepNs > 0)
-        {
-            msSleep(sleepNs / NS_PER_MS);
-        }
-    }
+		if (sleepNs > 0)
+		{
+			msSleep(sleepNs / NS_PER_MS);
+		}
+	}
 }
 void startGame()
 {

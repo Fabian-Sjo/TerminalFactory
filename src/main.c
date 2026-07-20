@@ -51,8 +51,6 @@ void debugInfoRender(Window *window, Canvas *canvas);
 Canvas *screenCanvas;
 Window *gameWindow;
 
-void render(double deltaTime, GameData *gameData);
-
 Vector2Int screenToWorld(Vector2Int screenPos)
 {
 
@@ -66,7 +64,6 @@ Vector2Int worldToScreen(Vector2Int worldPos)
 		worldPos.x - floor(player->position.x),
 		worldPos.y - floor(player->position.y)};
 }
-
 SoundGeneratorResult walkSoundGenerator(double time)
 {
 
@@ -79,15 +76,15 @@ SoundGeneratorResult walkSoundGenerator(double time)
 	return (SoundGeneratorResult){
 		.val = sin(1 * 3.14 * freq * time) * env, .isFinished = time > 0.2};
 }
-void testPath()
+void render()
 {
-
-	// printf("length: %d result: %d\n",testEntity->path.length,testEntity->path.result);
-	//  printf("pos x: %f y: %f\n",
-	//	   testEntity->position.x,
-	//	   testEntity->position.y);
+	gameData.frame++;
+	windowManagerRender(screenCanvas);
+	rendererDrawCanvas(screenCanvas);
+	terminalSetCursorVisible(false);
+	rendererFlush();
 }
-void loop(double deltaTime)
+void tick(double deltaTime)
 {
 	gameData.deltaTime = deltaTime;
 	poolInput();
@@ -161,33 +158,32 @@ void loop(double deltaTime)
 		placeTile(gameData.activeWorld, buildPos, placeDirection, selectedTile);
 	};
 
-	gameData.frame++;
 	gameData.tick++;
 	windowManagerUpdate(screenCanvas);
 	windowManagerMouse(cursorPos);
 
-	windowManagerRender(screenCanvas);
+	if (testEntity->path.result != PATHFINDER_ERROR && testEntity->path.length > 0 && testEntity->path.progress < testEntity->path.length)
+	{
+		Vector2Int newPos = testEntity->path.points[testEntity->path.progress];
+		if (isTileWalkable(gameData.activeWorld, newPos))
+		{
+
+			soundPlay(&walkSound, 1, NULL);
+			testEntity->position = newPos;
+			testEntity->path.progress++;
+		}
+		else
+		{
+			if (testEntity->path.points != NULL)
+				free(testEntity->path.points);
+		}
+	}
 
 	worldTick(&gameData);
 	// debugInfo(deltaTime, keyEvent);
 
 	// render(deltaTime, &gameData);
-	rendererDrawCanvas(screenCanvas);
-	terminalSetCursorVisible(false);
-	rendererFlush();
-	/*
-	printf("selected item[%d][%c]: %s        \n", selectedTile, getTileDefinition(selectedTile)->icon, getTileDefinition(selectedTile)->name);
-	printf("screen width: %d height:%d\n", screenSize.x, screenSize.y);
-	printf("delta time: %10fs FPS: %3f\n nrOfChunks: %d\n", deltaTime, (1.0 / deltaTime), nrOfChunks(gameData.activeWorld));
-	printf("Frame: %d  ", gameData.frame++);
-	printf("Pos x: %-3f Pos y: %-3f\n", player->position.x, player->position.y);
-	printf("gameLocalMouse: Pos x: %-3d Pos y: %-3d\nbuildPos:       Pos x: %-3d Pos y: %-3d\n",
-		   gameScreenLocalMouse.x,
-		   gameScreenLocalMouse.y,
-		   buildPos.x,
-		   buildPos.y);
-	printf("placeDir %d\n", placeDirection);
-	*/
+
 	int chunkGenerateRadius = 30;
 	for (int x = -chunkGenerateRadius; x < chunkGenerateRadius; x++)
 	{
@@ -240,7 +236,6 @@ void gameRender(Window *window, Canvas *canvas)
 		window->size.y - borderSize * 2};
 	Vector2Int borders = (Vector2Int){borderSize, borderSize};
 	writeAreaToCanvas(gameData.activeWorld, canvas, vecAddI(position, borders), canvasSize, borders, &gameData);
-	testPath();
 	Vector2Int previewSize = getTileSize(selectedTile);
 	Vector2Int previewOriginOffset = getTileOriginOffset(selectedTile);
 
@@ -284,23 +279,6 @@ void gameRender(Window *window, Canvas *canvas)
 			canvasSetSprite(canvas, worldToScreen(point), sprite);
 			//  printf("{%d, %d}", point.x, point.y);
 		}
-
-		Vector2Int newPos = testEntity->path.points[testEntity->path.progress];
-
-		if (isTileWalkable(gameData.activeWorld, newPos))
-		{
-
-			soundPlay(&walkSound, 1, NULL);
-			testEntity->position = newPos;
-			testEntity->path.progress++;
-		}
-		else
-		{
-			if (testEntity->path.points != NULL)
-				free(testEntity->path.points);
-		}
-		// Vector2Int oldTarget = testEntity->path.points[testEntity->path.length - 1];
-		//  testEntity->path = getPath(testEntity->position, oldTarget, gameData.activeWorld);
 	}
 	Sprite sprite = (Sprite){
 		.icon = "║",
@@ -469,7 +447,7 @@ A			  v
 */
 void close(int dummy)
 {
-	stop();
+	stopGame();
 	exit(0);
 }
 
@@ -481,11 +459,11 @@ int main(int argc, char const *argv[])
 
 	addFunctionStart(&start);
 
-	addFunctionLoop(&loop);
+	addFunctionLoop(&tick, 5);
+	addFunctionLoop(&render, 10);
 
 	addFunctionStop(&stop);
 
-	setFps(20);
 	startGame();
 	return 0;
 }
