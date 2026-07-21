@@ -10,7 +10,7 @@ typedef struct Player
 
 
 // Advances the player state by the elapsed time DeltaTime.
-void tick(long deltaTime);
+void ticker(long deltaTime);
 
 // Allocates and initializes a new player object.
 Player *playerNew();

@@ -2,16 +2,15 @@
 #define GAMELOOP_H
 
 // Registers a callback to run once when the game starts.
-void addFunctionStart(void (*function)());
+void gameLoopAddFunctionStart(void (*function)());
 // Registers a callback to run every frame with the elapsed delta time.
-void addFunctionLoop(void (*function)(double deltaTime));
+void gameLoopAddFunctionLoop(void (*function)(double deltaTime),int targetFps);
 // Registers a callback to run once when the game stops.
-void addFunctionStop(void (*function)());
-// Sets the target frame rate for the game loop.
-void setFps(int fps);
+void gameLoopAddFunctionStop(void (*function)());
+
 // Starts the game loop.
-void startGame();
+void gameLoopStartGame();
 // Stops the game loop.
-void stopGame();
+void gameLoopStopGame();
 
 #endif

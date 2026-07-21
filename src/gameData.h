@@ -12,7 +12,8 @@ typedef struct GameData
 
 	long frame;
 	long tick;
-	double deltaTime;
+	double tickDelta;
+	double frameDelta;
 	World *activeWorld;
 } GameData;
 

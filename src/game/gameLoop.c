@@ -4,77 +4,107 @@
 #include "../utils/systemIndependant.h"
 #define NS_PER_SEC 1000000000L
 #define NS_PER_MS 1000000L
-
-int targerFps = 10;
+#define MS_PER_S 1000L
+#include <stdio.h>
+double updateDelta = 10;
 
 int isRunning = false;
-struct timespec lastTime;
-
+struct timespec lastFrame;
+struct LoopingFunction
+{
+	void (*function)(double deltaTime);
+	double targetDelta;
+	struct timespec lastActivation;
+};
 int nrOfFunctionsStart = 0;
 void (*functionsStart[5])(); // TODO hardcoded 5
 
 int nrOfFunctionsLoop = 0;
-void (*functionsLoop[5])(long deltaTime); // TODO hardcoded 5
-double functionsLoopTargetDelta[5];		  // TODO hardcoded 5
+struct LoopingFunction functionsLoop[5];
 
 int nrOfFunctionsStop = 0;
 void (*functionsStop[5])(); // TODO hardcoded 5
 
-void setFps(int fps)
+void updateUpdateRate()
 {
-	targerFps = fps;
+	double minDelta = -1;
+	for (size_t i = 0; i < nrOfFunctionsLoop; i++)
+	{
+		struct LoopingFunction *thisFunc = &functionsLoop[i];
+		if ((thisFunc->targetDelta * 0.8) < minDelta || minDelta == -1)
+			minDelta = thisFunc->targetDelta * 0.5;
+	}
+	if (minDelta == -1)
+		isRunning = false;
+	else
+		updateDelta = minDelta;
 }
 
-void addFunctionStart(void (*function)())
+void gameLoopAddFunctionStart(void (*function)())
 {
 	functionsStart[nrOfFunctionsStart++] = function;
 }
-void addFunctionLoop(void (*function)(double deltaTime), double targetDelta)
+void gameLoopAddFunctionLoop(void (*function)(double deltaTime), int fps)
 {
-	functionsLoopTargetDelta[nrOfFunctionsLoop] = targetDelta;
-	functionsLoop[nrOfFunctionsLoop++] = function;
+	double delta = 1.0 / fps;
+	functionsLoop[nrOfFunctionsLoop++] = (struct LoopingFunction){
+		.function = function,
+		.lastActivation = {0},
+		.targetDelta = delta};
+	updateUpdateRate();
 }
-void addFunctionStop(void (*function)())
+void gameLoopAddFunctionStop(void (*function)())
 {
 	functionsStop[nrOfFunctionsStop++] = function;
 }
+long timeDiff(struct timespec earlierTime, struct timespec laterTime)
+{
+	return (laterTime.tv_sec - earlierTime.tv_sec) * NS_PER_SEC +
+		   (laterTime.tv_nsec - earlierTime.tv_nsec);
+}
 void gameLoop()
 {
-	struct timespec frameStart, now;
+	struct timespec frameStart, frameEnd, funcStart;
 
-	long targetFrameNs = NS_PER_SEC / targerFps;
-
+	long ticks = 0;
 	while (isRunning)
 	{
+		long targetFrameNs = updateDelta * NS_PER_SEC;
+		ticks++;
 		timespec_get(&frameStart, TIME_UTC);
 
-		long nsDiff =
-			(frameStart.tv_sec - lastTime.tv_sec) * NS_PER_SEC +
-			(frameStart.tv_nsec - lastTime.tv_nsec);
+		long deltaTime = timeDiff(lastFrame, frameStart);
 
-		lastTime = frameStart;
-
+		int lowestSleepIndex = 0;
 		for (int i = 0; i < nrOfFunctionsLoop; i++)
 		{
-			this should wait for fastest loop
-			functionsLoop[i](((double)nsDiff) / NS_PER_SEC);
+			struct LoopingFunction *thisFunc = &functionsLoop[i];
+
+			timespec_get(&funcStart, TIME_UTC);
+			long timeSinceLastTrigger = timeDiff(thisFunc->lastActivation, funcStart);
+			if (timeSinceLastTrigger >= thisFunc->targetDelta * NS_PER_SEC)
+			{
+				thisFunc->function(((double)timeSinceLastTrigger) / NS_PER_SEC);
+				thisFunc->lastActivation = frameStart;
+				timespec_get(&thisFunc->lastActivation, TIME_UTC);
+			}
 		}
 
-		timespec_get(&now, TIME_UTC);
+		timespec_get(&frameEnd, TIME_UTC);
 
 		long frameTime =
-			(now.tv_sec - frameStart.tv_sec) * NS_PER_SEC +
-			(now.tv_nsec - frameStart.tv_nsec);
+			(frameEnd.tv_sec - frameStart.tv_sec) * NS_PER_SEC +
+			(frameEnd.tv_nsec - frameStart.tv_nsec);
 
 		long sleepNs = targetFrameNs - frameTime;
-
+		lastFrame = frameEnd;
 		if (sleepNs > 0)
 		{
 			msSleep(sleepNs / NS_PER_MS);
 		}
 	}
 }
-void startGame()
+void gameLoopStartGame()
 {
 	for (int i = 0; i < nrOfFunctionsStart; i++)
 	{
@@ -83,7 +113,7 @@ void startGame()
 	isRunning = true;
 	gameLoop();
 }
-void stopGame()
+void gameLoopStopGame()
 {
 	for (int i = 0; i < nrOfFunctionsStop; i++)
 	{

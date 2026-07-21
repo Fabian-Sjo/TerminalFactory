@@ -47,7 +47,7 @@ void gameUpdate(Window *window);
 void gameRender(Window *window, Canvas *canvas);
 void debugInfoUpdate(Window *window);
 void debugInfoRender(Window *window, Canvas *canvas);
-
+void ticker(double deltaTime);
 Canvas *screenCanvas;
 Window *gameWindow;
 
@@ -76,23 +76,25 @@ SoundGeneratorResult walkSoundGenerator(double time)
 	return (SoundGeneratorResult){
 		.val = sin(1 * 3.14 * freq * time) * env, .isFinished = time > 0.2};
 }
-void render()
+void render(double delta)
 {
+	gameData.frameDelta = delta;
 	gameData.frame++;
 	windowManagerRender(screenCanvas);
 	rendererDrawCanvas(screenCanvas);
 	terminalSetCursorVisible(false);
 	rendererFlush();
 }
-void tick(double deltaTime)
+
+void ticker(double deltaTime)
 {
-	gameData.deltaTime = deltaTime;
+	gameData.tickDelta = deltaTime;
 	poolInput();
 
 	Vector2Int cursorPos = vecDivI(terminalGetMousePos(), (Vector2Int){1, 1});
 	if (terminalGetKeyState(KEY_ESC) == KEY_JUST_PRESSED)
 	{
-		stopGame();
+		gameLoopStopGame();
 	};
 	if (terminalGetKeyState(KEY_Q) == KEY_JUST_PRESSED)
 	{
@@ -189,7 +191,7 @@ void tick(double deltaTime)
 	{
 		for (int y = -chunkGenerateRadius; y < chunkGenerateRadius; y++)
 			generateChunk(gameData.activeWorld, testEntity->position.x + x * 8, testEntity->position.y + y * 8,
-						  &generateCraterChunk);
+						  &generateCrystalCaveChunk);
 	}
 }
 
@@ -339,11 +341,11 @@ void debugInfoRender(Window *window, Canvas *canvas)
 	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
 	snprintf(buffer, sizeof(buffer), "screen width: %d height:%d", screenSize.x, screenSize.y);
 	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
-	snprintf(buffer, sizeof(buffer), "FPS: %3d", (int)(1.0 / gameData.deltaTime));
-	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
 	snprintf(buffer, sizeof(buffer), "nrOfChunks: %d", nrOfChunks(gameData.activeWorld));
 	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
-	snprintf(buffer, sizeof(buffer), "Frame: %d", gameData.frame++);
+	snprintf(buffer, sizeof(buffer), "Frame: %5d FPS: %.2f", gameData.frame++, 1 / gameData.frameDelta);
+	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
+	snprintf(buffer, sizeof(buffer), "Tick: %5d TPS: %.2f", gameData.tick++, 1 / gameData.tickDelta);
 	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
 	snprintf(buffer, sizeof(buffer), "Pos x: %-3d\nPos y: %-3d", (int)player->position.x, (int)player->position.y);
 	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
@@ -435,35 +437,22 @@ void stop()
 	printf("\033[2J");	// clear terminal
 	printf("\033[H");	// scroll back terminal
 	fflush(stdout);
-}
-
-/*
-	  > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > - > -
-A			  v
-A			  v
-A			  v
-< < < < < < < <
-
-*/
-void close(int dummy)
-{
-	stopGame();
 	exit(0);
 }
 
 int main(int argc, char const *argv[])
 {
-	signal(SIGINT, close);
+	signal(SIGINT, gameLoopStopGame);
 	soundInit();
 	terminalInit();
 
-	addFunctionStart(&start);
+	gameLoopAddFunctionStart(&start);
 
-	addFunctionLoop(&tick, 5);
-	addFunctionLoop(&render, 10);
+	gameLoopAddFunctionLoop(&ticker, 20);
+	gameLoopAddFunctionLoop(&render, 20);
 
-	addFunctionStop(&stop);
+	gameLoopAddFunctionStop(&stop);
 
-	startGame();
+	gameLoopStartGame();
 	return 0;
 }
