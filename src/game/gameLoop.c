@@ -31,8 +31,8 @@ void updateUpdateRate()
 	for (size_t i = 0; i < nrOfFunctionsLoop; i++)
 	{
 		struct LoopingFunction *thisFunc = &functionsLoop[i];
-		if ((thisFunc->targetDelta * 0.8) < minDelta || minDelta == -1)
-			minDelta = thisFunc->targetDelta * 0.5;
+		if ((thisFunc->targetDelta * 0.3) < minDelta || minDelta == -1)
+			minDelta = thisFunc->targetDelta * 0.3;
 	}
 	if (minDelta == -1)
 		isRunning = false;

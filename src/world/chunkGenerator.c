@@ -2,16 +2,9 @@
 #include "chunkGenerator.h"
 #include <math.h>
 
-Vector2Float sobelFilter(double (*getPointValue)(Vector2Int pos), Vector2Int pos)
+Vector2Float sobelFilter(double values[3][3])
 {
-	double values[3][3];
-	for (int x = -1; x <= 1; x++)
-	{
-		for (int y = -1; y <= 1; y++)
-		{
-			values[y + 1][x + 1] = getPointValue(vecAddI(pos, (Vector2Int){x, y}));
-		}
-	}
+
 	double kernelX[3][3] = {
 		{-1, 0, 1},
 		{-2, 0, 2},
@@ -33,15 +26,26 @@ Vector2Float sobelFilter(double (*getPointValue)(Vector2Int pos), Vector2Int pos
 	}
 	return (Vector2Float){sumX, sumY};
 }
+Vector2Float sobelFilterFunc(double (*getPointValue)(Vector2Int pos), Vector2Int pos)
+{
+	double values[3][3];
+	for (int x = -1; x <= 1; x++)
+	{
+		for (int y = -1; y <= 1; y++)
+		{
+			values[y + 1][x + 1] = getPointValue(vecAddI(pos, (Vector2Int){x, y}));
+		}
+	}
+	return sobelFilter(values);
+}
 double getPerlinValue(Vector2Int pos)
 {
 	// return (abs(pos.x) + abs(pos.y)) > 11;
 	return perlin_Get2d(pos.x + 1000, pos.y + 1000, 0.05, 1);
 }
+
 Chunk generateMoonChunk(Vector2Int chunkCoordinate)
 {
-
-	// Tile *tile = &testTile;
 
 	Chunk chunk;
 	for (int x = 0; x < CHUNK_SIZE; x++)
@@ -59,7 +63,7 @@ Chunk generateMoonChunk(Vector2Int chunkCoordinate)
 
 			int random = ((int)(perlinValue * 100) ^ (int)(perlinValue * 1000)) % 100;
 
-			Vector2Float normal = sobelFilter(&getPerlinValue, globalPos);
+			Vector2Float normal = sobelFilterFunc(&getPerlinValue, globalPos);
 			double direction = atan2(normal.y, normal.x);
 			direction = ((direction / 3.14159) + 1) / 2; // 0 to 1
 
@@ -116,6 +120,36 @@ Chunk generateMoonChunk(Vector2Int chunkCoordinate)
 	}
 	return chunk;
 }
+float getCrater(Vector2Int globalPos, float frequency, float size, float randomness)
+{
+	float cellSize = 1 / frequency;
+	int cellX = floor((double)globalPos.x / cellSize);
+	int cellY = floor((double)globalPos.y / cellSize);
+	double lowestDist = size;
+	for (int ox = -1; ox <= 1; ox++)
+	{
+		for (int oy = -1; oy <= 1; oy++)
+		{
+			int gx = cellX + ox;
+			int gy = cellY + oy;
+
+			double rx = perlin_Get2d(gx + 1000, gy + 1000, 1.0, 1);
+			double ry = perlin_Get2d(gx + 5000, gy + 5000, 1.0, 1);
+
+			int cx = gx * cellSize + (int)((rx + 1.0) * 0.5 * cellSize);
+			int cy = gy * cellSize + (int)((ry + 1.0) * 0.5 * cellSize);
+
+			double dx = globalPos.x - cx;
+			double dy = globalPos.y - cy;
+
+			double dist = sqrt(dx * dx + dy * dy) * (1 + randomness * perlin_Get2d(globalPos.x, globalPos.y, 5, 1));
+
+			if (dist < lowestDist)
+				lowestDist = dist;
+		}
+	}
+	return -(lowestDist - size) / size;
+}
 Chunk generateCraterChunk(Vector2Int chunkCoordinate)
 {
 	Chunk chunk;
@@ -143,93 +177,58 @@ Chunk generateCraterChunk(Vector2Int chunkCoordinate)
 			double terrain = perlin_Get2d(globalPos.x, globalPos.y, 0.012, 3);
 
 			// Crater field
-			double crater = 1000.0;
 
-			int cellSize = 24;
+			int cellSize = 50;
 
-			int cellX = floor((double)globalPos.x / cellSize);
-			int cellY = floor((double)globalPos.y / cellSize);
-
-			for (int ox = -1; ox <= 1; ox++)
+			double height = 0;
+			float finalCrater = 0;
+			float values[3][3] = {0};
+			for (size_t x = 0; x < 3; x++)
 			{
-				for (int oy = -1; oy <= 1; oy++)
+				for (size_t y = 0; y < 3; y++)
 				{
-					int gx = cellX + ox;
-					int gy = cellY + oy;
 
-					double rx = perlin_Get2d(gx + 1000, gy + 1000, 1.0, 1);
-					double ry = perlin_Get2d(gx + 5000, gy + 5000, 1.0, 1);
-
-					int cx = gx * cellSize + (int)((rx + 1.0) * 0.5 * cellSize);
-					int cy = gy * cellSize + (int)((ry + 1.0) * 0.5 * cellSize);
-
-					double dx = globalPos.x - cx;
-					double dy = globalPos.y - cy;
-
-					double dist = sqrt(dx * dx + dy * dy);
-
-					if (dist < crater)
-						crater = dist;
+					for (size_t i = 1; i <= 1; i++)
+					{
+						float crater = getCrater(globalPos, 0.008 * i, 50.0 / i, 0.0);
+						if (crater > values[x][y] && crater > 0)
+							values[x][y] = crater;
+					}
 				}
 			}
 
-			double height = terrain;
+			Vector2Float normal = sobelFilter(values);
+			double direction = atan2(normal.y, normal.x);
+			direction = ((direction / 3.14159) + 1) / 2; // 0 to 1
+			double magnitude = sqrt(normal.x * normal.x + normal.y * normal.y);
+			if (abs(globalPos.x) + abs(globalPos.y) < 10)
+				magnitude++;
 
-			// Bowl
-			if (crater < 8)
-				height -= (8 - crater) * 0.12;
-
-			// Raised rim
-			if (crater > 8 && crater < 11)
-				height += (11 - crater) * 0.15;
-
-			if (height > 0.45)
-			{
-				tile.kind = TILE_NONE;
-				tile.sprite.icon.data[0] = ' ';
-			}
-			else if (height > 0.25)
-			{
-				tile.kind = TILE_NONE;
-				tile.sprite.icon.data[0] = ' ';
-			}
-			else if (height > 0.0)
 			{
 				tile.kind = TILE_ROCK;
-				tile.sprite.icon.data[0] = 'O';
+				if (direction < 0.1)
+					tile.sprite.icon.data[0] = '|';
+				else if (direction < 0.125)
+					tile.sprite.icon.data[0] = '/';
+				else if (direction < 0.325)
+					tile.sprite.icon.data[0] = '-';
+				else if (direction < 0.425)
+					tile.sprite.icon.data[0] = '\\';
+				else if (direction < 0.625)
+					tile.sprite.icon.data[0] = '|';
+				else if (direction < 0.675)
+					tile.sprite.icon.data[0] = '/';
+				else if (direction < 0.825)
+					tile.sprite.icon.data[0] = '-';
+				else if (direction < 0.925)
+					tile.sprite.icon.data[0] = '\\';
+				else
+					tile.sprite.icon.data[0] = '|';
 			}
-			else if (height > -0.45)
-			{
-				tile.kind = TILE_NONE;
-				ground.sprite.icon.data[0] = '.';
-			}
-			else
-			{
-				tile.kind = TILE_NONE;
-				ground.sprite.icon.data[0] = ',';
-			}
-
-			// Random boulders
-			double rockNoise = perlin_Get2d(globalPos.x + 2000,
-											globalPos.y + 2000,
-											0.25,
-											1);
-
-			if (tile.kind == TILE_NONE && rockNoise > 0.72)
+			if (values[1][1] > 0)
 			{
 				tile.kind = TILE_ROCK;
-				tile.sprite.icon.data[0] = 'o';
-			}
-
-			// Small crater pits
-			double pitNoise = perlin_Get2d(globalPos.x + 8000,
-										   globalPos.y + 8000,
-										   0.08,
-										   2);
-
-			if (tile.kind == TILE_NONE && pitNoise < -0.78)
-			{
-				ground.sprite.icon.data[0] = '*';
+				tile.sprite.icon.data[0] = '0' + (int)(values[1][1] * 10);
 			}
 
 			setChunkTile(&chunk, x, y, tile);
@@ -290,7 +289,7 @@ Chunk generateCrystalCaveChunk(Vector2Int chunkCoordinate)
 				tile.kind = TILE_ROCK;
 
 				// Make walls directional-looking
-				Vector2Float normal = sobelFilter(&getPerlinValue, globalPos);
+				Vector2Float normal = sobelFilterFunc(&getPerlinValue, globalPos);
 
 				double angle = atan2(normal.y, normal.x);
 

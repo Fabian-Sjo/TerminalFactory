@@ -37,7 +37,6 @@ Player *player;
 Entity *testEntity;
 Vector2Int buildPos;
 Vector2Int gameScreenLocalMouse;
-Vector2Int screenSize;
 Direction placeDirection = DIR_NORTH;
 TileKind selectedTile = TILE_BELT;
 
@@ -186,12 +185,14 @@ void ticker(double deltaTime)
 
 	// render(deltaTime, &gameData);
 
-	int chunkGenerateRadius = 30;
+	int chunkGenerateRadius = 3;
 	for (int x = -chunkGenerateRadius; x < chunkGenerateRadius; x++)
 	{
 		for (int y = -chunkGenerateRadius; y < chunkGenerateRadius; y++)
-			generateChunk(gameData.activeWorld, testEntity->position.x + x * 8, testEntity->position.y + y * 8,
-						  &generateCrystalCaveChunk);
+			generateChunk(gameData.activeWorld,
+						  (player->position.x + gameWindow->size.x / 2) + x * CHUNK_SIZE,
+						  (player->position.y + gameWindow->size.y / 2) + y * CHUNK_SIZE,
+						  generateCraterChunk);
 	}
 }
 
@@ -339,7 +340,7 @@ void debugInfoRender(Window *window, Canvas *canvas)
 
 	snprintf(buffer, sizeof(buffer), "selected item[%d][%c]: %s", selectedTile, getTileDefinition(selectedTile)->icon, getTileDefinition(selectedTile)->name);
 	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
-	snprintf(buffer, sizeof(buffer), "screen width: %d height:%d", screenSize.x, screenSize.y);
+	snprintf(buffer, sizeof(buffer), "screen width: %d height:%d", window->size.x, window->size.y);
 	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
 	snprintf(buffer, sizeof(buffer), "nrOfChunks: %d", nrOfChunks(gameData.activeWorld));
 	pos.y += canvasWriteString(canvas, buffer, pos, &format).y;
@@ -448,8 +449,8 @@ int main(int argc, char const *argv[])
 
 	gameLoopAddFunctionStart(&start);
 
-	gameLoopAddFunctionLoop(&ticker, 20);
-	gameLoopAddFunctionLoop(&render, 20);
+	gameLoopAddFunctionLoop(&ticker, 30);
+	gameLoopAddFunctionLoop(&render, 60);
 
 	gameLoopAddFunctionStop(&stop);
 

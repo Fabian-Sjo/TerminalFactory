@@ -111,7 +111,7 @@ function parseLinker(chunk) {
 }
 function parseCompiler(chunk) {
 
-	const regex = /(.*\.[hc])\((\d+)\)\s*:\s*(warning|error)\s*(\w*):\s*(.*)/;
+	const regex = /^(.+[\\\/])(\w+\.[hc])\((\d+)\)\s*:\s*(warning|error)\s*(\w*):\s*(.*)/;
 	const parsed = chunk.match(regex);
 	if (parsed == null)
 		return {
@@ -124,7 +124,7 @@ function parseCompiler(chunk) {
 			str: chunk
 		}
 	let type = ChunkType.OTHER
-	switch (parsed[3]) {
+	switch (parsed[4]) {
 		case "error":
 			type = ChunkType.ERROR
 			break;
@@ -140,34 +140,38 @@ function parseCompiler(chunk) {
 		text: parsed[1],
 		color: "white"
 	});
-	const line = styleText({
+	const file = styleText({
 		text: parsed[2],
+		color: "brightBlue"
+	});
+	const line = styleText({
+		text: parsed[3],
 		color: "white"
 	});
 
 	const error = type == ChunkType.ERROR ?
 		styleText({
-			text: parsed[3],
+			text: parsed[4],
 			color: "red"
 		}) : styleText({
-			text: parsed[3],
+			text: parsed[4],
 			color: "yellow"
 		});
 	const errorCode = styleText({
-		text: parsed[4],
+		text: parsed[5],
 		color: "black"
 	});
 	const errorText = type == ChunkType.ERROR ?
 		styleText({
-			text: parsed[5],
+			text: parsed[6],
 			color: "red"
 		}) : styleText({
-			text: parsed[5],
+			text: parsed[6],
 			color: "yellow"
 		});
 	return {
 		type: type,
-		str: `${path}(${line}) ${error} : ${errorText}`
+		str: `${path}${file}(${line}) ${error} : ${errorText}`
 	};
 }
 
@@ -278,29 +282,32 @@ let output = {
 child.stdout.setEncoding("utf8");
 let stage = "compiler";
 child.stdout.on("data", chunk => {
-	const linkerRegex = /^Microsoft \(R\) Incremental Linker Version/;
-	if (chunk.match(linkerRegex)) {
-		stage = "linker"
-	}
-	let out;
-	switch (stage) {
-		case "compiler":
-			out = parseCompiler(chunk)
-			break;
-		case "linker":
-			out = parseLinker(chunk)
-			break;
+	chunk.split("\n").forEach(line => {
+		const linkerRegex = /^Microsoft \(R\) Incremental Linker Version/;
+		if (line.match(linkerRegex)) {
+			stage = "linker"
+		}
+		let out;
+		switch (stage) {
+			case "compiler":
+				out = parseCompiler(line)
+				break;
+			case "linker":
+				out = parseLinker(line)
+				break;
 
-		default:
-			out = null
-			break;
-	}
-	if (out.type == ChunkType.ERROR)
-		output.errors.push(out)
-	if (out.type == ChunkType.WARNING)
-		output.warnings.push(out)
-	if (out.type == ChunkType.OTHER)
-		output.other.push(out)
+			default:
+				out = null
+				break;
+		}
+		console.log(out.type + "----" + line);
+		if (out.type == ChunkType.ERROR)
+			output.errors.push(out)
+		if (out.type == ChunkType.WARNING)
+			output.warnings.push(out)
+		if (out.type == ChunkType.OTHER)
+			output.other.push(out)
+	})
 });
 
 child.stderr.setEncoding("utf8");
